@@ -5860,9 +5860,125 @@ function showDetail(id) {
       +'<button onclick="whatsappMusteri('+j.id+')" class="ma-wa"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Müşteri WA</button>'
     +'</div>'
     +'</div>'
+    +'</div>'
+    +'<div id="job-belgeler-'+j.id+'" style="margin-top:12px;background:var(--surface2);border-radius:10px;padding:12px">'
+    +'<div style="font-size:9px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);font-weight:700;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border)">BELGELER</div>'
+    +'<div style="color:var(--muted);font-size:12px;text-align:center;padding:8px 0">Yükleniyor...</div>'
     +'</div>';
 
   document.getElementById('modal').classList.add('open'); document.body.style.overflow='hidden';
+  renderJobStorageBelgeler(j.id);
+}
+
+// ═══════════════════════════════════════════════════════
+// BELGE YÖNETİMİ (Supabase Storage)
+// ═══════════════════════════════════════════════════════
+
+async function renderJobStorageBelgeler(jobId) {
+  var container = document.getElementById('job-belgeler-' + jobId);
+  if (!container) return;
+  var j = jobs.find(function(x) { return x.id === jobId; });
+  if (!j) return;
+  var belgeler = j.belgeler || [];
+
+  var katLabels = { tutanak: 'Teslim Tutanağı', fatura: 'Gelen Fatura', tasima: 'Taşıma Fotosu' };
+  var kategoriler = ['tutanak', 'fatura', 'tasima'];
+
+  // Her belge için signed URL al (1 saatlik erişim)
+  var items = [];
+  for (var i = 0; i < belgeler.length; i++) {
+    var b = belgeler[i];
+    var signedUrl = null;
+    try {
+      var res = await window_supabase.storage.from('belgeler').createSignedUrl(b.path, 3600);
+      if (res.data) signedUrl = res.data.signedUrl;
+    } catch(e) {}
+    items.push({ path: b.path, kategori: b.kategori, name: b.name, uploadedAt: b.uploadedAt, signedUrl: signedUrl });
+  }
+
+  var canUpload = (window._gkRole === 'admin' || window._gkRole === 'editor');
+  var canDelete = (window._gkRole === 'admin');
+
+  var html = '<div style="font-size:9px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);font-weight:700;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border)">BELGELER</div>';
+
+  kategoriler.forEach(function(kat) {
+    var katItems = items.filter(function(b) { return b.kategori === kat; });
+    html += '<div style="margin-bottom:12px">';
+    html += '<div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">' + katLabels[kat] + (katItems.length ? ' (' + katItems.length + ')' : '') + '</div>';
+
+    if (katItems.length === 0) {
+      html += '<div style="font-size:12px;color:var(--muted);padding:2px 0">Belge yok</div>';
+    } else {
+      katItems.forEach(function(b) {
+        var isImg = /\.(jpg|jpeg|png|gif|webp)$/i.test(b.name);
+        var isPdf = /\.pdf$/i.test(b.name);
+        var thumb = isImg && b.signedUrl
+          ? '<img src="' + b.signedUrl + '" style="width:40px;height:40px;object-fit:cover;border-radius:4px;flex-shrink:0">'
+          : '<div style="width:40px;height:40px;background:var(--bg);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">' + (isPdf ? '📄' : '📎') + '</div>';
+        // Path'i onclick attribute içinde güvenli kullanmak için tırnak escape et
+        var safePathAttr = b.path.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+        html += '<div style="display:flex;align-items:center;gap:8px;padding:6px;background:var(--bg);border-radius:6px;margin-bottom:4px">';
+        html += thumb;
+        html += '<div style="flex:1;min-width:0"><div style="font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + escapeHtml(b.name) + '</div>';
+        html += '<div style="font-size:10px;color:var(--muted)">' + (b.uploadedAt ? b.uploadedAt.split('T')[0] : '') + '</div></div>';
+        if (b.signedUrl) {
+          html += '<a href="' + b.signedUrl + '" target="_blank" style="padding:4px 10px;background:var(--surface2);border-radius:5px;font-size:11px;color:var(--blue);text-decoration:none;flex-shrink:0">Aç</a>';
+        }
+        if (canDelete) {
+          html += '<button onclick="deleteStorageBelge(' + jobId + ',\'' + safePathAttr + '\')" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:18px;padding:0 4px;flex-shrink:0;line-height:1">×</button>';
+        }
+        html += '</div>';
+      });
+    }
+
+    if (canUpload) {
+      html += '<button onclick="uploadStorageBelge(' + jobId + ',\'' + kat + '\')" style="margin-top:6px;padding:5px 12px;background:transparent;border:1px dashed var(--border);border-radius:6px;font-size:11px;color:var(--muted);cursor:pointer;width:100%;font-family:\'DM Sans\',sans-serif">+ ' + katLabels[kat] + ' Ekle</button>';
+    }
+    html += '</div>';
+  });
+
+  container.innerHTML = html;
+}
+
+async function uploadStorageBelge(jobId, kategori) {
+  if (!checkAdminRole('Belge yükleme')) return;
+  var input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*,application/pdf';
+  input.onchange = async function() {
+    var file = input.files[0];
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) { showToast('Dosya 10MB\'dan büyük olamaz'); return; }
+    var companyId = window._gkCompanyId;
+    if (!companyId) { showToast('Şirket bilgisi bulunamadı'); return; }
+    var ext = file.name.split('.').pop().toLowerCase();
+    var fileName = Date.now() + '.' + ext;
+    var path = companyId + '/jobs/' + jobId + '/' + kategori + '/' + fileName;
+    showToast('Yükleniyor...');
+    var uploadRes = await window_supabase.storage.from('belgeler').upload(path, file);
+    if (uploadRes.error) { showToast('Hata: ' + uploadRes.error.message); return; }
+    var j = jobs.find(function(x) { return x.id === jobId; });
+    if (!j) return;
+    if (!j.belgeler) j.belgeler = [];
+    j.belgeler.push({ path: path, kategori: kategori, name: file.name, uploadedAt: new Date().toISOString() });
+    saveJobs();
+    showToast('Belge yüklendi');
+    renderJobStorageBelgeler(jobId);
+  };
+  input.click();
+}
+
+async function deleteStorageBelge(jobId, path) {
+  if (!checkAdminOnly('Belge silme')) return;
+  if (!confirm('Bu belgeyi silmek istediğinize emin misiniz?')) return;
+  var removeRes = await window_supabase.storage.from('belgeler').remove([path]);
+  if (removeRes.error) { showToast('Hata: ' + removeRes.error.message); return; }
+  var j = jobs.find(function(x) { return x.id === jobId; });
+  if (!j) return;
+  j.belgeler = (j.belgeler || []).filter(function(b) { return b.path !== path; });
+  saveJobs();
+  showToast('Belge silindi');
+  renderJobStorageBelgeler(jobId);
 }
 
 

@@ -2797,6 +2797,7 @@ body.sidebar-expanded .tab-panel.active {
         <option value="fatura">Fatura</option>
         <option value="sozlesme">Sözleşme</option>
         <option value="sigorta">Sigorta</option>
+        <option value="sirket">Şirket Evrakı</option>
         <option value="diger">Diğer</option>
       </select>
       <select id="belgeJobFilter" onchange="renderBelgeler()" style="padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface2);color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif">
@@ -7789,7 +7790,7 @@ function openSoforModal(id) {
   clearSoforDoc('ehliyet'); clearSoforDoc('ruhsat'); clearSoforDoc('src');
   document.getElementById('soforModal').classList.add('open'); document.body.style.overflow='hidden';
 }
-function editSofor(id) {
+async function editSofor(id) {
   var s = soforler.find(function(x){return x.id===id;}); if (!s) return;
   document.getElementById('soforEditId').value = id;
   document.getElementById('soforAd').value = s.first || '';
@@ -7804,9 +7805,27 @@ function editSofor(id) {
   var _spL=document.getElementById('sfPlaka'); if(_spL) _spL.value=s.plaka||'';
   document.getElementById('soforNot').value = s.not || '';
   clearSoforDoc('ehliyet'); clearSoforDoc('ruhsat'); clearSoforDoc('src');
-  if (s.ehliyetImg) { document.getElementById('ehliyetImg').src=s.ehliyetImg; document.getElementById('ehliyetPreview').style.display='block'; }
-  if (s.ruhsatImg)  { document.getElementById('ruhsatImg').src=s.ruhsatImg;   document.getElementById('ruhsatPreview').style.display='block'; }
-  if (s.srcImg)     { document.getElementById('srcBelgeImg').src=s.srcImg;     document.getElementById('srcPreview').style.display='block'; }
+  // Storage path varsa signed URL ile göster, yoksa legacy base64 kullan
+  var _docsToShow = [
+    {path: s.ehliyetPath, imgId: 'ehliyetImg',  prevId: 'ehliyetPreview', legacy: s.ehliyetImg},
+    {path: s.ruhsatPath,  imgId: 'ruhsatImg',   prevId: 'ruhsatPreview',  legacy: s.ruhsatImg},
+    {path: s.srcPath,     imgId: 'srcBelgeImg',  prevId: 'srcPreview',     legacy: s.srcImg},
+  ];
+  for (var _dsi = 0; _dsi < _docsToShow.length; _dsi++) {
+    var _ds = _docsToShow[_dsi];
+    if (_ds.path) {
+      try {
+        var _dsRes = await window_supabase.storage.from('belgeler').createSignedUrl(_ds.path, 3600);
+        if (_dsRes.data) {
+          document.getElementById(_ds.imgId).src = _dsRes.data.signedUrl;
+          document.getElementById(_ds.prevId).style.display = 'block';
+        }
+      } catch(e) {}
+    } else if (_ds.legacy) {
+      document.getElementById(_ds.imgId).src = _ds.legacy;
+      document.getElementById(_ds.prevId).style.display = 'block';
+    }
+  }
   document.getElementById('soforModal').classList.add('open'); document.body.style.overflow='hidden';
 }
 function closeSoforModal(e) {
@@ -7814,24 +7833,26 @@ function closeSoforModal(e) {
 }
 
 function handleSoforDoc(tip, input) {
-  var file = input.files[0];
-  if (!file) return;
+  var file = input.files[0]; if (!file) return;
   if (!file.type.startsWith('image/') && file.type !== 'application/pdf') {
     showToast('⚠️ Sadece resim veya PDF yükleyebilirsiniz'); return;
   }
-  compressImage(file, 1200, 0.78, function(data) {
-    if (!data) { showToast('⚠️ Dosya okunamadı'); return; }
+  if (!window._soforPendingDocs) window._soforPendingDocs = {};
+  window._soforPendingDocs[tip] = file;
+  var reader = new FileReader();
+  reader.onload = function(ev) {
     if (tip === 'ehliyet') {
-      document.getElementById('ehliyetImg').src = data;
+      document.getElementById('ehliyetImg').src = ev.target.result;
       document.getElementById('ehliyetPreview').style.display = 'block';
     } else if (tip === 'ruhsat') {
-      document.getElementById('ruhsatImg').src = data;
+      document.getElementById('ruhsatImg').src = ev.target.result;
       document.getElementById('ruhsatPreview').style.display = 'block';
     } else {
-      document.getElementById('srcBelgeImg').src = data;
+      document.getElementById('srcBelgeImg').src = ev.target.result;
       document.getElementById('srcPreview').style.display = 'block';
     }
-  });
+  };
+  reader.readAsDataURL(file);
 }
 
 function clearSoforDoc(tip) {
@@ -7839,23 +7860,36 @@ function clearSoforDoc(tip) {
     document.getElementById('ehliyetImg').src = '';
     document.getElementById('ehliyetPreview').style.display = 'none';
     document.getElementById('ehliyetFile').value = '';
+    if (window._soforPendingDocs) delete window._soforPendingDocs['ehliyet'];
   } else if (tip === 'ruhsat') {
     document.getElementById('ruhsatImg').src = '';
     document.getElementById('ruhsatPreview').style.display = 'none';
     document.getElementById('ruhsatFile').value = '';
+    if (window._soforPendingDocs) delete window._soforPendingDocs['ruhsat'];
   } else {
     document.getElementById('srcBelgeImg').src = '';
     document.getElementById('srcPreview').style.display = 'none';
     document.getElementById('srcBelgeFile').value = '';
+    if (window._soforPendingDocs) delete window._soforPendingDocs['src'];
   }
 }
 
-function viewSoforDoc(tip, id) {
+async function viewSoforDoc(tip, id) {
   var s = soforler.find(function(x){return x.id===id;});
   if (!s) return;
-  var src = tip === 'ehliyet' ? s.ehliyetImg : s.ruhsatImg;
+  var storagePath = tip === 'ehliyet' ? s.ehliyetPath : tip === 'ruhsat' ? s.ruhsatPath : s.srcPath;
+  var legacySrc = tip === 'ehliyet' ? s.ehliyetImg : tip === 'ruhsat' ? s.ruhsatImg : s.srcImg;
+  var label = tip === 'ehliyet' ? 'Ehliyet' : tip === 'ruhsat' ? 'Ruhsat' : 'SRC';
+  var src = null;
+  if (storagePath) {
+    try {
+      var res = await window_supabase.storage.from('belgeler').createSignedUrl(storagePath, 3600);
+      if (res.data) src = res.data.signedUrl;
+    } catch(e) {}
+  } else {
+    src = legacySrc;
+  }
   if (!src) { showToast('Görsel yok'); return; }
-  var label = tip === 'ehliyet' ? 'Ehliyet' : 'Ruhsat';
   var ov = document.createElement('div');
   ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:1100;display:flex;align-items:center;justify-content:center;cursor:pointer';
   ov.onclick = function(){document.body.removeChild(ov);};
@@ -7863,7 +7897,7 @@ function viewSoforDoc(tip, id) {
   document.body.appendChild(ov);
 }
 
-function saveSofor() {
+async function saveSofor() {
   var first = document.getElementById('soforAd').value.trim().toUpperCase();
   var last = document.getElementById('soforSoyad').value.trim().toUpperCase();
   if (!first || !last) { showToast('⚠️ Ad ve soyad zorunludur'); return; }
@@ -7892,7 +7926,38 @@ function saveSofor() {
     ehliyetImg: ehliyetCleared ? '' : ((ehliyetSrc && ehliyetSrc.indexOf('data:') === 0) ? ehliyetSrc : prevEhliyet),
     ruhsatImg:  ruhsatCleared  ? '' : ((ruhsatSrc  && ruhsatSrc.indexOf('data:')  === 0) ? ruhsatSrc  : prevRuhsat),
     srcImg:     srcCleared     ? '' : ((srcSrc      && srcSrc.indexOf('data:')      === 0) ? srcSrc      : prevSrc),
+    // Storage path'lerini mevcut kayıttan koru (yeni yüklemede aşağıda güncellenir)
+    ehliyetPath: existingSofor ? (existingSofor.ehliyetPath || null) : null,
+    ruhsatPath:  existingSofor ? (existingSofor.ruhsatPath  || null) : null,
+    srcPath:     existingSofor ? (existingSofor.srcPath     || null) : null,
   };
+  // Şoför belgelerini Storage'a yükle
+  var _pendingDocs = window._soforPendingDocs || {};
+  window._soforPendingDocs = {};
+  var companyId = window._gkCompanyId;
+  if (companyId) {
+    var docTipler = ['ehliyet', 'ruhsat', 'src'];
+    for (var _di = 0; _di < docTipler.length; _di++) {
+      var _tip = docTipler[_di];
+      var _file = _pendingDocs[_tip];
+      if (_file) {
+        var _ext = _file.name.split('.').pop().toLowerCase();
+        var _path = companyId + '/soforler/' + id + '/' + _tip + '/' + Date.now() + '.' + _ext;
+        var _res = await window_supabase.storage.from('belgeler').upload(_path, _file);
+        if (!_res.error) {
+          // Eski dosyayı sil
+          var _oldPath = _tip === 'ehliyet' ? (existingSofor && existingSofor.ehliyetPath) :
+                         _tip === 'ruhsat'  ? (existingSofor && existingSofor.ruhsatPath)  :
+                                              (existingSofor && existingSofor.srcPath);
+          if (_oldPath) await window_supabase.storage.from('belgeler').remove([_oldPath]);
+          // Path'i kaydet, base64'ü temizle
+          if (_tip === 'ehliyet') { s.ehliyetPath = _path; s.ehliyetImg = ''; }
+          if (_tip === 'ruhsat')  { s.ruhsatPath  = _path; s.ruhsatImg  = ''; }
+          if (_tip === 'src')     { s.srcPath      = _path; s.srcImg     = ''; }
+        }
+      }
+    }
+  }
   var idx = soforler.findIndex(function(x){return x.id===id;});
   if (idx >= 0) soforler[idx] = s; else soforler.unshift(s);
   saveSoforler();
@@ -8022,11 +8087,11 @@ function saveBelgeler() { sbSet('belgeler', belgeler); }
 var belgeKatLabels = {
   teslim:'Teslim Tutanağı', fatura_foto:'Fatura Fotoğrafı',
   ehliyet:'Ehliyet', ruhsat:'Ruhsat', src:'SRC Belgesi',
-  sigorta:'Sigorta Poliçesi', irsaliye:'İrsaliye', diger:'Diğer'
+  sigorta:'Sigorta Poliçesi', irsaliye:'İrsaliye', sirket:'Şirket Evrakı', diger:'Diğer'
 };
 var belgeKatEmoji = {
   teslim:'📋', fatura_foto:'🧾', ehliyet:'🪪', ruhsat:'📄',
-  src:'📜', sigorta:'🛡️', irsaliye:'📦', diger:'📎'
+  src:'📜', sigorta:'🛡️', irsaliye:'📦', sirket:'🏢', diger:'📎'
 };
 
 function renderBelgeler() {
@@ -8397,52 +8462,75 @@ function closeBelgeViewModal(e) {
 }
 function handleBelgeFile2(e) {
   var file = e.target.files[0]; if (!file) return;
+  if (file.size > 10 * 1024 * 1024) { showToast('⚠️ Dosya 10MB\'dan büyük olamaz'); return; }
   var isPdf = file.type === 'application/pdf';
-  compressImage(file, 1200, 0.78, function(data) {
-    if (!data) { showToast('⚠️ Dosya okunamadı'); return; }
-    pendingBelgeData = { data: data, isPdf: isPdf };
-    document.getElementById('belgePreview').style.display = 'block';
-    if (isPdf) {
-      document.getElementById('belgePreviewImg').style.display = 'none';
-      document.getElementById('belgePreviewPdf').style.display = 'block';
-    } else {
+  pendingBelgeData = { file: file, isPdf: isPdf };
+  document.getElementById('belgePreview').style.display = 'block';
+  if (isPdf) {
+    document.getElementById('belgePreviewImg').style.display = 'none';
+    document.getElementById('belgePreviewPdf').style.display = 'block';
+  } else {
+    var reader = new FileReader();
+    reader.onload = function(ev) {
       document.getElementById('belgePreviewImg').style.display = 'block';
-      document.getElementById('belgePreviewImg').src = data;
+      document.getElementById('belgePreviewImg').src = ev.target.result;
       document.getElementById('belgePreviewPdf').style.display = 'none';
-    }
-  });
+    };
+    reader.readAsDataURL(file);
+  }
 }
 function handleBelgeFile(e) {} // unused legacy
-function saveBelge() {
+async function saveBelge() {
   var ad = document.getElementById('belgeAd').value.trim().toUpperCase();
   if (!ad) { showToast('⚠️ Belge adı zorunludur'); return; }
   var id = parseInt(document.getElementById('belgeEditId').value) || Date.now();
   var existingB = belgeler.find(function(x){return x.id===id;});
   var belgeJobId = parseInt(document.getElementById('belgeJobId').value) || null;
   var b = {
-    id:id,
-    ad:ad,
+    id: id,
+    ad: ad,
     kat: document.getElementById('belgeKat').value,
     musteri: document.getElementById('belgeMusteri').value.trim().toUpperCase(),
     isNo: document.getElementById('belgeIsNo').value.trim(),
     jobId: belgeJobId,
     tarih: new Date().toISOString(),
-    data: pendingBelgeData ? pendingBelgeData.data : (existingB ? existingB.data : null),
+    storagePath: existingB ? (existingB.storagePath || null) : null,
     isPdf: pendingBelgeData ? pendingBelgeData.isPdf : (existingB ? existingB.isPdf : false),
+    data: existingB ? (existingB.data || null) : null,
   };
+  if (pendingBelgeData && pendingBelgeData.file && window._gkCompanyId) {
+    showToast('Yükleniyor...');
+    var file = pendingBelgeData.file;
+    var ext = file.name.split('.').pop().toLowerCase();
+    var path = window._gkCompanyId + '/belgeler/' + id + '/' + Date.now() + '.' + ext;
+    var res = await window_supabase.storage.from('belgeler').upload(path, file);
+    if (res.error) { showToast('Hata: ' + res.error.message); return; }
+    if (existingB && existingB.storagePath) {
+      await window_supabase.storage.from('belgeler').remove([existingB.storagePath]);
+    }
+    b.storagePath = path;
+    b.data = null;
+  }
+  pendingBelgeData = null;
   var idx = belgeler.findIndex(function(x){return x.id===id;});
   if (idx >= 0) belgeler[idx] = b; else belgeler.unshift(b);
   saveBelgeler();
   document.getElementById('belgeModal').classList.remove('open'); document.body.style.overflow='';
   renderBelgeler();
-  // İş modalı açıksa belge bölümünü güncelle
   if (b.jobId && document.getElementById('modal').classList.contains('open')) {
-    renderJobBelgeler(b.jobId);
+    renderJobStorageBelgeler(b.jobId);
   }
   showToast('✓ Belge kaydedildi');
 }
-function viewBelge(id) {
+async function viewBelge(id) {
   var b = belgeler.find(function(x){return x.id===id;}); if (!b) return;
+  var signedUrl = null;
+  if (b.storagePath) {
+    try {
+      var res = await window_supabase.storage.from('belgeler').createSignedUrl(b.storagePath, 3600);
+      if (res.data) signedUrl = res.data.signedUrl;
+    } catch(e) {}
+  }
   document.getElementById('belgeViewTitle').textContent = b.ad;
   var content = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">'
     + '<div style="font-family:\'DM Sans\',sans-serif;font-size:16px;font-weight:700;letter-spacing:0;color:var(--accent)">' + b.ad + '</div>'
@@ -8454,18 +8542,29 @@ function viewBelge(id) {
     + '<span>'+(b.isNo?'İş: '+escapeHtml(b.isNo):'')+'</span>'
     + '<span>'+new Date(b.tarih).toLocaleDateString('tr-TR')+'</span>'
     + '</div>';
-  if (b.data && !b.isPdf) content += '<img src="' + (b.data) + '" style="width:100%;border-radius:8px;margin-bottom:12px">';
-  else if (b.isPdf) content += '<div style="padding:24px;background:var(--surface2);border-radius:8px;text-align:center;font-size:48px;margin-bottom:12px">📄<div style="font-size:13px;color:var(--muted);margin-top:8px">PDF dosyası</div></div>';
-  else content += '<div style="padding:24px;background:var(--surface2);border-radius:8px;text-align:center;font-size:48px">' + (belgeKatEmoji[b.kat]||'📎') + '</div>';
+  if (signedUrl && !b.isPdf) {
+    content += '<img src="' + signedUrl + '" style="width:100%;border-radius:8px;margin-bottom:12px">';
+  } else if (b.data && !b.isPdf) {
+    content += '<img src="' + b.data + '" style="width:100%;border-radius:8px;margin-bottom:12px">';
+  } else if (b.isPdf || (b.storagePath && b.isPdf)) {
+    content += '<div style="padding:24px;background:var(--surface2);border-radius:8px;text-align:center;font-size:48px;margin-bottom:12px">📄<div style="font-size:13px;color:var(--muted);margin-top:8px">PDF dosyası</div></div>';
+  } else {
+    content += '<div style="padding:24px;background:var(--surface2);border-radius:8px;text-align:center;font-size:48px">' + (belgeKatEmoji[b.kat]||'📎') + '</div>';
+  }
+  var downloadUrl = signedUrl || b.data;
   content += '<div style="display:flex;gap:8px;margin-top:4px">'
     + '<button onclick="deleteBelge('+b.id+')" style="background:rgba(214,48,49,0.1);border:1px solid var(--red);color:var(--red);padding:8px 16px;border-radius:6px;cursor:pointer;font-size:12px">🗑 Sil</button>'
-    + (b.data?'<a href="'+b.data+'" download="'+b.ad+'" style="background:rgba(22,165,105,0.1);border:1px solid var(--green);color:var(--green);padding:8px 16px;border-radius:6px;text-decoration:none;font-size:12px">⬇ İndir</a>':'')
+    + (downloadUrl ? '<a href="'+downloadUrl+'" target="_blank" style="background:rgba(22,165,105,0.1);border:1px solid var(--green);color:var(--green);padding:8px 16px;border-radius:6px;text-decoration:none;font-size:12px">⬇ İndir / Aç</a>' : '')
     + '</div>';
   document.getElementById('belgeViewContent').innerHTML = content;
   document.getElementById('belgeViewModal').classList.add('open'); document.body.style.overflow='hidden';
 }
-function deleteBelge(id) {
+async function deleteBelge(id) {
   if (!confirm('Bu belgeyi silmek istediğinize emin misiniz?')) return;
+  var b = belgeler.find(function(x){return x.id===id;});
+  if (b && b.storagePath) {
+    await window_supabase.storage.from('belgeler').remove([b.storagePath]);
+  }
   belgeler = belgeler.filter(function(x){return x.id!==id;});
   saveBelgeler();
   document.getElementById('belgeViewModal').classList.remove('open'); document.body.style.overflow='';

@@ -5571,7 +5571,7 @@ function showDetail(id) {
     +'</div>'
     +masrafHtml
     // ── FİNANSAL KART (CPA: net/KDV hariç rakamlar önce) ──
-    +'<div class="fin-card">'
+    +'<div class="fin-card" style="grid-template-columns:'+(isMobDetail?'1fr':'1fr 1px 1fr 1px 1fr')+'">'
       // ALIŞ kolonu
       +'<div class="fin-col">'
         +'<div class="fin-col-title">ALIŞ</div>'
@@ -5582,7 +5582,7 @@ function showDetail(id) {
         +(j.tevkifatOran>0?'<div class="fin-row" style="margin-top:4px"><span class="fin-lbl" style="display:flex;align-items:center;gap:4px"><span style="font-size:9px;font-weight:800;background:rgba(240,112,48,.15);color:var(--orange);border:1px solid rgba(240,112,48,.35);border-radius:3px;padding:1px 4px;line-height:1.4">T</span>Tevkifat</span><span class="fin-val" style="color:var(--orange)">−'+fmt(j.tevkifatTutar)+'</span></div>'
         +'<div class="fin-row"><span class="fin-lbl" style="color:var(--muted);padding-left:16px">Net Ödeme</span><span class="fin-val" style="color:var(--accent);font-weight:700">'+fmt(j.tevkifatNetOdeme)+'</span></div>':'')
       +'</div>'
-      +'<div class="fin-div-v"></div>'
+      +(isMobDetail?'':'<div class="fin-div-v"></div>')
       // SATIŞ kolonu
       +'<div class="fin-col">'
         +'<div class="fin-col-title">SATIŞ</div>'
@@ -5591,7 +5591,7 @@ function showDetail(id) {
         +'<div class="fin-sep"></div>'
         +'<div class="fin-row"><span class="fin-lbl" style="font-weight:700;color:var(--text2)">KDV Dahil</span><span class="fin-val" style="font-size:13px;font-weight:700;color:var(--text)">'+fmt(j.sellTotal)+'</span></div>'
       +'</div>'
-      +'<div class="fin-div-v"></div>'
+      +(isMobDetail?'':'<div class="fin-div-v"></div>')
       // KÂR ANALİZİ kolonu
       +'<div class="fin-col">'
         +'<div class="fin-col-title">KÂR ANALİZİ</div>'

@@ -1914,6 +1914,14 @@ body.sidebar-expanded .tab-panel.active {
   overscroll-behavior: contain;
   touch-action: pan-y;
 }
+/* AR Aging kartları */
+.aging-card { background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:10px 12px; }
+.aging-card.warn { border-color:rgba(245,158,11,.4); background:rgba(245,158,11,.06); }
+.aging-card.danger { border-color:rgba(249,115,22,.4); background:rgba(249,115,22,.06); }
+.aging-card.critical { border-color:rgba(239,68,68,.4); background:rgba(239,68,68,.06); }
+.aging-lbl { font-size:9px; text-transform:uppercase; letter-spacing:1px; color:var(--muted); margin-bottom:4px; }
+.aging-val { font-size:14px; font-weight:800; font-family:'JetBrains Mono',monospace; color:var(--text); }
+@media(max-width:768px){ #arAgingCards { grid-template-columns:repeat(2,1fr) !important; } }
 </style>
 <!-- Google Maps API anahtarı Ayarlar > API Anahtarları'ndan yüklenir -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -2918,15 +2926,20 @@ body.sidebar-expanded .tab-panel.active {
     <!-- Beklenen Tahsilatlar -->
     <div class="kasa-section" id="tahsilatWidget"></div>
 
-    <!-- Nakit Akışı + Gelir/Gider donutlar yan yana -->
+    <!-- AR Aging + Gider Dağılımı yan yana -->
     <div class="dash-cols">
       <div class="kasa-section">
         <div class="kasa-section-head">
-          <div class="kasa-section-title">Nakit Akışı</div>
+          <div class="kasa-section-title">AR Aging — Alacak Analizi</div>
         </div>
-        <div style="display:flex;align-items:center;gap:16px;padding:14px 16px;flex-wrap:wrap">
-          <svg id="kasaAkisDonut" viewBox="0 0 160 160" style="width:160px;height:160px;flex-shrink:0"></svg>
-          <div id="kasaAkisLegend" style="font-size:11px;flex:1;min-width:100px"></div>
+        <div id="arAgingWrap" style="padding:12px 16px">
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px" id="arAgingCards">
+            <div class="aging-card" id="aging0"><div class="aging-lbl">0–30 Gün</div><div class="aging-val" id="aging0val">₺0</div></div>
+            <div class="aging-card warn" id="aging1"><div class="aging-lbl">31–60 Gün</div><div class="aging-val" id="aging1val">₺0</div></div>
+            <div class="aging-card danger" id="aging2"><div class="aging-lbl">61–90 Gün</div><div class="aging-val" id="aging2val">₺0</div></div>
+            <div class="aging-card critical" id="aging3"><div class="aging-lbl">90+ Gün</div><div class="aging-val" id="aging3val">₺0</div></div>
+          </div>
+          <div id="arAgingBars" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
       </div>
       <div class="kasa-section">
@@ -2940,13 +2953,27 @@ body.sidebar-expanded .tab-panel.active {
       </div>
     </div>
 
-    <!-- Kategori dağılımı -->
+    <!-- Müşteri Karlılık Matrisi -->
     <div class="kasa-section">
       <div class="kasa-section-head">
-        <div class="kasa-section-title">Kategori Dağılımı</div>
-        <button onclick="toggleKasaCats()" style="background:none;border:none;font-size:11px;color:var(--muted);cursor:pointer" id="kasaCatsToggle">▼ Göster</button>
+        <div class="kasa-section-title">Müşteri Karlılık Matrisi</div>
       </div>
-      <div id="kasaCatsWrap" style="display:none"><div class="kasa-cat-grid" id="kasaCatGrid"></div></div>
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:12px" id="musteriKarlilikTable">
+          <thead>
+            <tr style="border-bottom:2px solid var(--border)">
+              <th style="text-align:left;padding:8px 6px;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted)">Müşteri</th>
+              <th style="text-align:right;padding:8px 6px;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted)">Ciro</th>
+              <th style="text-align:right;padding:8px 6px;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted)">Net Kâr</th>
+              <th style="text-align:right;padding:8px 6px;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted)">Marj%</th>
+              <th style="text-align:right;padding:8px 6px;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted)">Açık</th>
+            </tr>
+          </thead>
+          <tbody id="musteriKarlilikBody">
+            <tr><td colspan="5" style="padding:16px;text-align:center;color:var(--muted);font-size:12px">Yükleniyor...</td></tr>
+          </tbody>
+        </table>
+      </div>
     </div>
 
     <!-- Filtre -->
@@ -4141,8 +4168,8 @@ var _editingId=null;
 var _pendingTeklifId=null;
 var _dashCache=null,_dashCacheTime=0,_partnerPeriod='ay';
 var _dashPeriod=localStorage.getItem('goker_dash_period')||'ay';
-var _haftaCardMode = localStorage.getItem('goker_hafta_card') || 'current'; // 'current' | 'prev'
-var _ayCardMode    = localStorage.getItem('goker_ay_card')    || 'current'; // 'current' | 'prev'
+var _haftaCardMode = parseInt(localStorage.getItem('goker_hafta_card') || '0', 10); // 0=bu hafta, 1=geçen hafta, 2..11=önceki haftalar
+var _ayCardMode    = localStorage.getItem('goker_ay_card')    || new Date().toISOString().slice(0,7); // 'YYYY-MM' formatı
 var _kpiData={};
 var _deletedJob=null,_undoTimer=null;
 var _saveCount=parseInt(localStorage.getItem('_goker_saves')||'0');
@@ -4485,7 +4512,7 @@ function switchTab(tab) {
   if (tab === 'isler')     { renderYearPills(); renderList(); showJobList(); }
   if (tab === 'fatura')    renderFaturalar();
   if (tab === 'takvim')    renderTakvim();
-  if (tab === 'kasa')      renderKasa();
+  if (tab === 'kasa')      { renderKasa(); renderMusteriKarliligi(); renderArAging(); }
   if (tab === 'yedek')     { renderYedek(); setTimeout(function(){ if(typeof switchAyarlarTab==='function')switchAyarlarTab('sirket'); initAccent(); },30); }
   // mob-tabbar senkronizasyonu
   document.querySelectorAll('.mob-tab').forEach(function(b){ b.classList.remove('active'); });
@@ -5286,11 +5313,17 @@ function toggleKanbanView() {
     tableWrap.style.display = 'none';
     kanbanSec.style.display = 'block';
     if (btn) { btn.style.background = 'var(--accent-dim)'; btn.style.color = 'var(--accent)'; btn.style.borderColor = 'var(--accent)'; }
+    // Kanban açıkken liste filtre satırını gizle
+    var filterBarRow = document.querySelector('.filter-bar-row');
+    if (filterBarRow) filterBarRow.style.display = 'none';
     renderKanban();
   } else {
     tableWrap.style.display = '';
     kanbanSec.style.display = 'none';
     if (btn) { btn.style.background = ''; btn.style.color = ''; btn.style.borderColor = ''; }
+    // Kanban kapanınca filtre satırını geri göster
+    var filterBarRow = document.querySelector('.filter-bar-row');
+    if (filterBarRow) filterBarRow.style.display = '';
   }
 }
 
@@ -11423,6 +11456,72 @@ function renderKasa() {
   }).join('');
 }
 
+// Müşteri Karlılık Matrisi — kasa tab açılınca çağrılır
+function renderMusteriKarliligi() {
+  var tbody = document.getElementById('musteriKarlilikBody');
+  if (!tbody) return;
+  var map = {};
+  jobs.forEach(function(j) {
+    var k = j.customerName || '—';
+    if (!map[k]) map[k] = { ciro:0, kar:0, acik:0, cnt:0 };
+    map[k].ciro += j.sellTotal || 0;
+    map[k].kar  += j.profit   || 0;
+    if (!j.paid) map[k].acik += j.sellTotal || 0;
+    map[k].cnt++;
+  });
+  var rows = Object.keys(map).map(function(k){ return Object.assign({ name:k }, map[k]); });
+  rows.sort(function(a,b){ return b.kar - a.kar; });
+  rows = rows.slice(0, 8);
+  if (!rows.length) { tbody.innerHTML = '<tr><td colspan="5" style="padding:16px;text-align:center;color:var(--muted)">Veri yok</td></tr>'; return; }
+  tbody.innerHTML = rows.map(function(r) {
+    var marj = r.ciro > 0 ? (r.kar/r.ciro*100).toFixed(1) : '0.0';
+    var marjColor = parseFloat(marj) >= 15 ? 'var(--green)' : parseFloat(marj) >= 8 ? 'var(--accent)' : 'var(--red)';
+    var karColor = r.kar >= 0 ? 'var(--green)' : 'var(--red)';
+    return '<tr style="border-bottom:1px solid var(--border)">'
+      + '<td style="padding:8px 6px;font-weight:600;font-size:12px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + escapeHtml(r.name) + '</td>'
+      + '<td style="padding:8px 6px;text-align:right;font-family:monospace;font-size:12px">' + fmt(r.ciro) + '</td>'
+      + '<td style="padding:8px 6px;text-align:right;font-family:monospace;font-size:12px;font-weight:700;color:'+karColor+'">' + fmt(r.kar) + '</td>'
+      + '<td style="padding:8px 6px;text-align:right;font-family:monospace;font-size:12px;font-weight:700;color:'+marjColor+'">%' + marj + '</td>'
+      + '<td style="padding:8px 6px;text-align:right;font-family:monospace;font-size:11px;color:'+(r.acik>0?'var(--red)':'var(--muted)') + '">' + (r.acik>0?fmt(r.acik):'\u2713') + '</td>'
+      + '</tr>';
+  }).join('');
+}
+
+// AR Aging — alacak yaşlandırma analizi
+function renderArAging() {
+  var now = new Date(); now.setHours(0,0,0,0);
+  var buckets = [0,0,0,0]; // 0-30, 31-60, 61-90, 90+
+  jobs.forEach(function(j) {
+    if (j.paid) return;
+    if (!j.date || !j.sellTotal) return;
+    var d = new Date(j.date); d.setHours(0,0,0,0);
+    var diff = Math.floor((now - d) / 86400000);
+    var idx = diff <= 30 ? 0 : diff <= 60 ? 1 : diff <= 90 ? 2 : 3;
+    buckets[idx] += j.sellTotal;
+  });
+  var total = buckets.reduce(function(s,v){ return s+v; }, 0);
+  var ids = ['aging0val','aging1val','aging2val','aging3val'];
+  var colors = ['var(--green)','var(--accent)','var(--orange)','var(--red)'];
+  ids.forEach(function(id,i){
+    var el = document.getElementById(id);
+    if (el) { el.textContent = fmt(buckets[i]); el.style.color = buckets[i]>0?colors[i]:'var(--muted)'; }
+  });
+  var bars = document.getElementById('arAgingBars');
+  if (!bars) return;
+  var labels = ['0\u201330 G\u00fcn','31\u201360 G\u00fcn','61\u201390 G\u00fcn','90+ G\u00fcn'];
+  bars.innerHTML = buckets.map(function(v,i){
+    var pct = total > 0 ? (v/total*100).toFixed(0) : 0;
+    if (v === 0) return '';
+    return '<div style="display:flex;align-items:center;gap:8px;font-size:11px">'
+      + '<div style="width:70px;color:var(--muted);flex-shrink:0">' + labels[i] + '</div>'
+      + '<div style="flex:1;background:var(--border);border-radius:4px;height:12px;overflow:hidden">'
+      + '<div style="width:'+pct+'%;height:100%;background:'+colors[i]+';border-radius:4px;transition:width .4s"></div>'
+      + '</div>'
+      + '<div style="width:55px;text-align:right;font-family:monospace;font-weight:700;color:'+colors[i]+'">'+pct+'%</div>'
+      + '</div>';
+  }).join('');
+}
+
 function toggleKasaCats() {
   var wrap=document.getElementById('kasaCatsWrap');
   var btn=document.getElementById('kasaCatsToggle');
@@ -11899,15 +11998,25 @@ function _renderDashboardInner(wrap) {
 
   // ── HERO A — Haftalık CİRO kartı (bağımsız, toggle: bu hafta / geçen hafta) ──
   var hKarData, hCiroData, hMarjiData, hMaliyetData, hJobsData, hLabelData, hPrevCiro;
-  if (_haftaCardMode === 'current') {
-    hKarData=haftaKar; hCiroData=haftaCiro; hMarjiData=haftaMarji;
-    hMaliyetData=haftaMaliyet; hJobsData=haftaJobs;
-    hLabelData='Bu Hafta'; hPrevCiro=prevHaftaCiro;
-  } else {
-    hKarData=prevHaftaKar; hCiroData=prevHaftaCiro; hMarjiData=prevHaftaMarji;
-    hMaliyetData=prevHaftaMaliyet; hJobsData=prevHaftaJobs;
-    hLabelData='Ge\u00e7en Hafta'; hPrevCiro=haftaCiro;
-  }
+  // offset bazlı hafta hesabı (0=bu hafta, 1=geçen hafta, 2..11=önceki haftalar)
+  var _hOffset = parseInt(_haftaCardMode) || 0;
+  var _hStart = new Date(weekStart); _hStart.setDate(_hStart.getDate() - _hOffset * 7);
+  var _hEnd = new Date(_hStart); _hEnd.setDate(_hStart.getDate() + 6);
+  var _hStartStr = _lds(_hStart); var _hEndStr = _lds(_hEnd);
+  var _hPrevStart = new Date(_hStart); _hPrevStart.setDate(_hPrevStart.getDate() - 7);
+  var _hPrevEnd = new Date(_hStart); _hPrevEnd.setDate(_hPrevEnd.getDate() - 1);
+  var _hPrevStartStr = _lds(_hPrevStart); var _hPrevEndStr = _lds(_hPrevEnd);
+  var _hJobs = jobs.filter(function(j){ return j.date && j.date >= _hStartStr && j.date <= _hEndStr; });
+  var _hPrevJobs = jobs.filter(function(j){ return j.date && j.date >= _hPrevStartStr && j.date <= _hPrevEndStr; });
+  hKarData = _hJobs.reduce(function(s,j){ return s + j.profit; }, 0);
+  hCiroData = _hJobs.reduce(function(s,j){ return s + j.sellTotal; }, 0);
+  hMaliyetData = hCiroData - hKarData;
+  hMarjiData = hCiroData > 0 ? (hKarData / hCiroData * 100).toFixed(1) : '0.0';
+  hJobsData = _hJobs;
+  hPrevCiro = _hPrevJobs.reduce(function(s,j){ return s + j.sellTotal; }, 0);
+  var _hMonths = ['Oca','\u015eub','Mar','Nis','May','Haz','Tem','\u011ea\u011f','Eyl','Eki','Kas','Ara'];
+  hLabelData = _hOffset === 0 ? 'Bu Hafta' : (_hOffset === 1 ? 'Ge\u00e7en Hafta' : _hOffset + ' Hafta \u00d6nce');
+  hLabelData += ' (' + _hStartStr.slice(8) + '/' + _hMonths[parseInt(_hStartStr.slice(5,7))-1] + ')';
   var hFark = hPrevCiro > 0 ? ((hCiroData-hPrevCiro)/hPrevCiro*100) : 0;
   var hFarkSign = hFark>=0?'+':'';
   var hFarkColor = hFark>=0?'var(--green)':'var(--red)';
@@ -11917,11 +12026,18 @@ function _renderDashboardInner(wrap) {
     +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'
       +'<span class="dash-hero-label" style="font-size:11px">HAFTALIK C\u0130RO</span>'
       +'<div style="display:flex;gap:4px">'
-        +['current','prev'].map(function(m){
-          var lbl=m==='current'?'Bu Hafta':'Ge\u00e7en';
-          var act=_haftaCardMode===m;
-          return '<button onclick="_haftaCardMode=\''+m+'\';localStorage.setItem(\'goker_hafta_card\',\''+m+'\');invalidateDashCache();renderDashboard()" style="padding:2px 8px;border-radius:4px;border:1px solid '+(act?'var(--accent)':'var(--border)')+';background:'+(act?'var(--accent-dim)':'transparent')+';color:'+(act?'var(--accent)':'var(--muted)')+';font-size:10px;font-weight:'+(act?'700':'400')+';cursor:pointer;font-family:inherit">'+lbl+'</button>';
-        }).join('')
+        +'<select onchange="_haftaCardMode=parseInt(this.value);localStorage.setItem(\'goker_hafta_card\',this.value);invalidateDashCache();renderDashboard()" style="font-size:10px;padding:2px 6px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--text);cursor:pointer;font-family:inherit">'
+        + (function(){
+            var opts=''; var _hMons=['Oca','\u015eub','Mar','Nis','May','Haz','Tem','\u011ea\u011f','Eyl','Eki','Kas','Ara'];
+            for(var i=0;i<12;i++){
+              var s=new Date(weekStart); s.setDate(s.getDate()-i*7);
+              var e=new Date(s); e.setDate(s.getDate()+6);
+              var lbl = i===0?'Bu Hafta': i===1?'Ge\u00e7en Hafta': _hMons[s.getMonth()]+' '+s.getDate()+'-'+e.getDate();
+              opts += '<option value="'+i+'"'+(i===(_haftaCardMode||0)?' selected':'')+'>'+lbl+'</option>';
+            }
+            return opts;
+          })()
+        +'</select>'
       +'</div>'
     +'</div>'
     +'<div class="dash-hero-val" style="color:var(--accent);font-size:24px">'+fmt(hCiroData)+'</div>'
@@ -11939,16 +12055,21 @@ function _renderDashboardInner(wrap) {
   var ayKarData, ayCiroData, ayMarjiData, ayMaliyetData, ayJobsData, ayLabelData, ayPrevCiro;
   var _ayName = ['Ocak','\u015eubat','Mart','Nisan','May\u0131s','Haziran','Temmuz','\u011ea\u011fustos','Eyl\u00fcl','Ekim','Kas\u0131m','Aral\u0131k'][today.getMonth()];
   var _prevAyName = ['Ocak','\u015eubat','Mart','Nisan','May\u0131s','Haziran','Temmuz','\u011ea\u011fustos','Eyl\u00fcl','Ekim','Kas\u0131m','Aral\u0131k'][prevD.getMonth()];
-  if (_ayCardMode === 'current') {
-    ayKarData=ayKar; ayCiroData=ayCiro; ayMarjiData=ayMarji;
-    ayMaliyetData=ayMaliyet; ayJobsData=ayJobs;
-    ayLabelData=_ayName+' '+today.getFullYear(); ayPrevCiro=prevCiro;
-  } else {
-    ayKarData=prevJobs.reduce(function(s,j){return s+(j.profit||0);},0);
-    ayCiroData=prevCiro; ayMarjiData=prevCiro>0?(ayKarData/prevCiro*100).toFixed(1):'0.0';
-    ayMaliyetData=prevCiro-ayKarData; ayJobsData=prevJobs;
-    ayLabelData=_prevAyName+' '+prevD.getFullYear(); ayPrevCiro=ayCiro;
-  }
+  // Seçili ay bazlı hesap (YYYY-MM formatı)
+  var _selMonth = (_ayCardMode && _ayCardMode.match(/^\d{4}-\d{2}$/)) ? _ayCardMode : thisMonth;
+  var _selJobs = jobs.filter(function(j){ return j.date && j.date.slice(0,7) === _selMonth; });
+  var _selD = new Date(_selMonth + '-01');
+  var _selPrevD = new Date(_selD.getFullYear(), _selD.getMonth()-1, 1);
+  var _selPrevMonth = _selPrevD.getFullYear()+'-'+('0'+(_selPrevD.getMonth()+1)).slice(-2);
+  var _selPrevJobs = jobs.filter(function(j){ return j.date && j.date.slice(0,7) === _selPrevMonth; });
+  ayKarData = _selJobs.reduce(function(s,j){ return s+(j.profit||0); }, 0);
+  ayCiroData = _selJobs.reduce(function(s,j){ return s+j.sellTotal; }, 0);
+  ayMaliyetData = ayCiroData - ayKarData;
+  ayMarjiData = ayCiroData > 0 ? (ayKarData/ayCiroData*100).toFixed(1) : '0.0';
+  ayJobsData = _selJobs;
+  ayPrevCiro = _selPrevJobs.reduce(function(s,j){ return s+j.sellTotal; }, 0);
+  var _ayNames = ['Ocak','\u015eubat','Mart','Nisan','May\u0131s','Haziran','Temmuz','\u011ea\u011fustos','Eyl\u00fcl','Ekim','Kas\u0131m','Aral\u0131k'];
+  ayLabelData = _ayNames[_selD.getMonth()] + ' ' + _selD.getFullYear();
   var ayFark = ayPrevCiro > 0 ? ((ayCiroData-ayPrevCiro)/ayPrevCiro*100) : 0;
   var ayFarkSign = ayFark>=0?'+':'';
   var ayFarkColor = ayFark>=0?'var(--green)':'var(--red)';
@@ -11958,11 +12079,21 @@ function _renderDashboardInner(wrap) {
     +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'
       +'<span class="dash-hero-label" style="font-size:11px">AYLIK C\u0130RO</span>'
       +'<div style="display:flex;gap:4px">'
-        +['current','prev'].map(function(m){
-          var lbl=m==='current'?_ayName:_prevAyName;
-          var act=_ayCardMode===m;
-          return '<button onclick="_ayCardMode=\''+m+'\';localStorage.setItem(\'goker_ay_card\',\''+m+'\');invalidateDashCache();renderDashboard()" style="padding:2px 8px;border-radius:4px;border:1px solid '+(act?'var(--accent)':'var(--border)')+';background:'+(act?'var(--accent-dim)':'transparent')+';color:'+(act?'var(--accent)':'var(--muted)')+';font-size:10px;font-weight:'+(act?'700':'400')+';cursor:pointer;font-family:inherit">'+lbl+'</button>';
-        }).join('')
+        +'<select onchange="_ayCardMode=this.value;localStorage.setItem(\'goker_ay_card\',this.value);invalidateDashCache();renderDashboard()" style="font-size:10px;padding:2px 6px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--text);cursor:pointer;font-family:inherit">'
+        + (function(){
+            var months = {}; var _ayNms = ['Oca','\u015eub','Mar','Nis','May','Haz','Tem','\u011ea\u011f','Eyl','Eki','Kas','Ara'];
+            jobs.forEach(function(j){ if(j.date) months[j.date.slice(0,7)]=1; });
+            var sorted = Object.keys(months).sort().reverse();
+            if(sorted.indexOf(thisMonth)<0) sorted.unshift(thisMonth);
+            var _selM = (_ayCardMode&&_ayCardMode.match(/^\d{4}-\d{2}$/))?_ayCardMode:thisMonth;
+            return sorted.map(function(m){
+              var d=new Date(m+'-01');
+              var lbl=_ayNms[d.getMonth()]+' '+d.getFullYear();
+              if(m===thisMonth) lbl='Bu Ay \u2013 '+lbl;
+              return '<option value="'+m+'"'+(m===_selM?' selected':'')+'>'+lbl+'</option>';
+            }).join('');
+          })()
+        +'</select>'
       +'</div>'
     +'</div>'
     +'<div class="dash-hero-val" style="color:var(--accent);font-size:24px">'+fmt(ayCiroData)+'</div>'

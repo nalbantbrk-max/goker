@@ -887,7 +887,8 @@ tbody tr:hover td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
 .fatura-uret-body{display:flex;min-height:560px}
 .fatura-uret-left{width:340px;flex-shrink:0;overflow-y:auto;border-right:1px solid var(--border2);padding:16px 20px;background:var(--surface2)}
 .fatura-uret-right{flex:1;overflow-y:auto;background:#f0f0f0;min-height:560px}
-@media(max-width:768px){.fatura-uret-body{flex-direction:column}.fatura-uret-left{width:100%;max-height:360px;border-right:none;border-bottom:1px solid var(--border2)}.fatura-uret-right{min-height:400px}}
+@media(max-width:768px){.fatura-uret-body{flex-direction:column}.fatura-uret-left{width:100%;max-height:none;border-right:none;border-bottom:1px solid var(--border2)}.fatura-uret-right{min-height:300px}}
+@media(max-width:768px){#faturaUretBtns{padding-bottom:96px!important}}
 .btn-print{background:var(--accent);color:var(--text);border:none;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif}
 #aysonuRaporPrint{display:none}
 @media print{
@@ -3779,7 +3780,7 @@ body.sidebar-expanded .tab-panel.active {
       </div>
     </div>
     <!-- Butonlar -->
-    <div style="padding:14px 24px;display:flex;gap:10px;background:var(--surface2);border-top:1px solid var(--border2)">
+    <div id="faturaUretBtns" style="padding:14px 24px;display:flex;gap:10px;background:var(--surface2);border-top:1px solid var(--border2)">
       <button onclick="closeFaturaUret()" style="flex:1;background:var(--input-bg);border:1.5px solid var(--border2);color:var(--muted);padding:11px;border-radius:10px;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:600;font-size:13px">İptal</button>
       <button onclick="saveFaturaUret()" style="flex:2;background:linear-gradient(135deg,#1d4ed8,#2563eb);border:none;color:#fff;padding:11px;border-radius:10px;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:700;font-size:13px;box-shadow:0 4px 12px rgba(37,99,235,.35)">🧾 Fatura Oluştur &amp; Kaydet</button>
     </div>
@@ -5610,7 +5611,9 @@ function renderList() {
       +'<td style="'+P+'" onclick="event.stopPropagation()"><span class="status-tag '+sc+'" style="display:inline-flex;align-items:center">'+(sc==='overdue'||sc==='warning'?'<span class="unpaid-dot"></span>':'')+sl+'</span></td>'
       // 12. Aksiyon butonları
       +'<td style="'+P+';white-space:nowrap" onclick="event.stopPropagation()">'
-        +'<button title="Fatura Üret" onclick="openFaturaUret('+j.id+')" style="background:none;border:1px solid rgba(240,208,0,.5);color:var(--accent);border-radius:5px;padding:2px 5px;cursor:pointer;font-size:11px;margin-right:3px">🧾</button>'
+        +(faturalar.some(function(f){return String(f.isRef)===String(j.id);})
+          ? '<span title="Fatura kesildi" style="display:inline-flex;align-items:center;gap:2px;background:rgba(22,165,105,0.12);border:1px solid var(--green);color:var(--green);border-radius:5px;padding:2px 6px;font-size:10px;margin-right:3px;font-weight:700">✓ Fatura</span>'
+          : '<button title="Fatura Üret" onclick="openFaturaUret('+j.id+')" style="background:none;border:1px solid rgba(240,208,0,.5);color:var(--accent);border-radius:5px;padding:2px 5px;cursor:pointer;font-size:11px;margin-right:3px">🧾</button>')
         +'<button class="btn-delete" onclick="deleteJobWithUndo('+j.id+')">✕</button>'
       +'</td>'
       +'</tr>';
@@ -5834,7 +5837,9 @@ function showDetail(id) {
     +'<div class="ma-actions-grid">'
       +'<button onclick="editJob('+j.id+')" class="ma-ghost"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z"/></svg> Düzenle</button>'
       +'<button onclick="copyJob('+j.id+')" class="ma-ghost"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Kopyala</button>'
-      +'<button onclick="openFaturaUret('+j.id+')" class="ma-ghost"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1V2"/><line x1="16" y1="8" x2="8" y2="8"/><line x1="16" y1="12" x2="8" y2="12"/></svg> Fatura</button>'
+      +(faturalar.some(function(f){return String(f.isRef)===String(j.id);})
+        ? '<span class="ma-ghost" style="color:var(--green);border-color:var(--green);pointer-events:none">✓ Faturalandı</span>'
+        : '<button onclick="openFaturaUret('+j.id+')" class="ma-ghost"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1V2"/><line x1="16" y1="8" x2="8" y2="8"/><line x1="16" y1="12" x2="8" y2="12"/></svg> Fatura</button>')
       +'<button onclick="mailIsOzeti('+j.id+')" class="ma-ghost"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="22,6 12,13 2,6"/></svg> Mail</button>'
     +'</div>'
     // ── Tier 3: İletişim ──
@@ -8329,6 +8334,17 @@ function calcFatura() {
   document.getElementById('ftNetCalc').textContent = fmt(net);
 }
 
+function viewFaturaPreview(id) {
+  var f = faturalar.find(function(x){return x.id===id;}); if(!f) return;
+  var j = jobs.find(function(x){return String(x.id)===String(f.isRef);});
+  if (!j) { showToast('İş kaydı bulunamadı — Manuel fatura önizleme desteklenmiyor', 'warn'); return; }
+  var html = buildFaturaHTML(j, f.no);
+  var w = window.open('', '_blank', 'width=960,height=720,scrollbars=yes,resizable=yes');
+  if (!w) { showToast('Popup engelleyici açık — lütfen izin ver', 'error'); return; }
+  w.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Fatura '+f.no+'</title></head><body style="margin:0;background:#e8e8e8;padding:20px">'+html+'</body></html>');
+  w.document.close();
+}
+
 function renderFaturalar() {
   var q = document.getElementById('faturaSearch').value.toLowerCase();
   var sf = document.getElementById('faturaStatusFilter').value;
@@ -8361,7 +8377,7 @@ function renderFaturalar() {
   }
   tbody.innerHTML = filtered.map(function(f){
     var durumLabel = f.durum==='kesildi'?'✓ Tahsil':f.durum==='gecikti'?'⚠ Gecikti':'⏳ Bekliyor';
-    return '<tr>'
+    return '<tr style="cursor:pointer" onclick="viewFaturaPreview('+f.id+')">'
       + '<td style="font-family:monospace;font-weight:600;color:var(--accent)">'+f.no+'</td>'
       + '<td style="color:var(--muted)">'+(f.tarih?new Date(f.tarih).toLocaleDateString('tr-TR'):'—')+'</td>'
       + '<td style="font-weight:500">'+escapeHtml(f.musteri)+'</td>'
@@ -8371,7 +8387,7 @@ function renderFaturalar() {
       + '<td style="text-align:right;font-family:monospace;font-weight:600;color:var(--accent)">'+fmt(f.net)+'</td>'
       + '<td style="text-align:center"><span class="fatura-status '+f.durum+'">'+durumLabel+'</span></td>'
       + '<td style="color:var(--muted);font-size:11px">'+(f.isRef||'—')+'</td>'
-      + '<td><div style="display:flex;gap:4px">'
+      + '<td onclick="event.stopPropagation()"><div style="display:flex;gap:4px">'
       + '<button onclick="editFatura('+f.id+')" style="background:none;border:1px solid var(--border);color:var(--muted);border-radius:4px;padding:3px 8px;cursor:pointer;font-size:11px">✏️</button>'
       + '<button onclick="deleteFatura('+f.id+')" style="background:none;border:1px solid rgba(232,64,64,0.3);color:var(--red);border-radius:4px;padding:3px 8px;cursor:pointer;font-size:11px">🗑</button>'
       + (f.durum!=='tahsil'?'<button onclick="markFaturaTahsil('+f.id+')" style="background:rgba(22,165,105,0.1);border:1px solid var(--green);color:var(--green);border-radius:4px;padding:3px 8px;cursor:pointer;font-size:10px;white-space:nowrap">✓ Tahsil</button>':'<button onclick="revertFaturaTahsil('+f.id+')" style="background:rgba(214,137,16,0.1);border:1px solid var(--orange);color:var(--orange);border-radius:4px;padding:3px 8px;cursor:pointer;font-size:10px;white-space:nowrap">↩ Geri Al</button>')
@@ -10626,6 +10642,13 @@ function nextFaturaNo() {
 }
 
 function openFaturaUret(jobId) {
+  // Duplicate kontrolü
+  if (jobId) {
+    var exF = faturalar.find(function(f){ return String(f.isRef)===String(jobId); });
+    if (exF) {
+      if (!confirm('Bu iş için "'+exF.no+'" numaralı fatura zaten mevcut.\nYeni fatura oluşturmaya devam etmek istiyor musunuz?')) return;
+    }
+  }
   // Dropdown'u tüm işlerle doldur
   var sel = document.getElementById('faturaJobSec');
   if (sel) {

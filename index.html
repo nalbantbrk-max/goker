@@ -10715,10 +10715,8 @@ function buildFaturaHTML(j, faturaNo) {
   var yazi = tutarYazi(Math.round(odenecek));
   var hizmetAdi = (j.origin||'?')+' - '+(j.destination||'?')+' KOMPLE NAKLİYE BEDELİ';
   if (j.cargoType) hizmetAdi += '\n'+j.cargoType.toUpperCase();
-  var driverLine = '';
-  if (plakaMobil) { driverLine = plakaMobil; }
-  else { driverLine = ((j.driverFirst||'')+' '+(j.driverLast||'')+' '+(j.plate||'')).trim(); }
-  if (j.plateDorse && !plakaMobil) driverLine += (driverLine?' / ':'')+j.plateDorse;
+  // Plaka/sürücü: SADECE manuel girişten al, iş kaydından otomatik doldurma
+  var driverLine = plakaMobil || '';
   var mDef = j._musteriDef;
   var musteriAdi = j.customerName||'';
   var musteriVKN = mDef?(mDef.vergiNo||''):'';
@@ -12597,6 +12595,7 @@ function loadSirketProfil() {
     p.ibanTl   = 'TR75 0006 4000 0014 2171 5215 07';
     p.ibanUsd  = 'TR57 0006 4000 0024 2170 5715 17';
     p.ibanEur  = 'TR71 0006 4000 0024 2170 6238 39';
+    p.logo     = null; // eski FORGE logosu varsa temizle, GOKER_LOGO_B64 kullanılacak
     sirketProfil = p;
     sbSet('sirket', sirketProfil);
   }

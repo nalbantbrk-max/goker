@@ -1187,7 +1187,7 @@ input:not([type="email"]):not([type="number"]):not([type="date"]):not([type="tel
   .kdv-row{flex-direction:column!important}
   .kdv-row input,.kdv-row select{width:100%!important}
   /* Modal'lar mobilde alt-sheet olarak aç */
-  .sf-modal-overlay{align-items:flex-end!important;padding:0!important}
+  .sf-modal-overlay{align-items:flex-end!important;padding:0 0 80px!important}
   .sf-modal,.sf-modal-box{border-radius:20px 20px 0 0!important;max-height:85vh!important;width:100%!important;max-width:100%!important;overflow-y:auto!important;overscroll-behavior:contain!important;-webkit-overflow-scrolling:touch!important}
   #modal{align-items:flex-end!important;padding:0!important}
   #modalBox{border-radius:20px 20px 0 0!important;max-height:92vh!important;width:100%!important;max-width:100%!important;padding:20px!important;overflow-y:auto!important;overscroll-behavior:contain!important;-webkit-overflow-scrolling:touch!important}
@@ -3857,6 +3857,15 @@ body.sidebar-expanded .tab-panel.active {
         <option value="">Tek Seferlik</option>
         <option value="aylik">Aylık</option>
         <option value="haftalik">Haftalık</option>
+      </select>
+    </div>
+    <div class="field" id="kasaOdemeField">
+      <label>Ödeme Yöntemi</label>
+      <select id="kasaOdeme">
+        <option value="nakit">Nakit</option>
+        <option value="havale">Havale / EFT</option>
+        <option value="kk">Kredi Kartı</option>
+        <option value="cek">Çek / Senet</option>
       </select>
     </div>
     <div style="display:flex;gap:10px;margin-top:8px">
@@ -10914,6 +10923,7 @@ function openKasaModal(id){
       set('kasaEditId',k.id);set('kasaTur',k.tur);set('kasaTarih',k.tarih);
       set('kasaAciklama',k.aciklama);set('kasaTutar',k.tutar);
       set('kasaTekrar',k.tekrar||'');
+      set('kasaOdeme',k.odeme||'nakit');
       onKasaTurChange(); // tekrar ve kategori alanlarını güncelle
     }
   }
@@ -11019,7 +11029,7 @@ function saveKasa(){
   var ac=g('kasaAciklama').trim(),tu=parseFloat(g('kasaTutar')),ta=g('kasaTarih');
   if(!ac||isNaN(tu)||!tu||!ta){showToast('⚠️ Açıklama, tutar ve tarih zorunludur');return;}
   var id=parseInt(g('kasaEditId'))||Date.now();
-  var k={id:id,tur:g('kasaTur'),tarih:ta,aciklama:ac,kat:g('kasaKat'),tutar:tu};
+  var k={id:id,tur:g('kasaTur'),tarih:ta,aciklama:ac,kat:g('kasaKat'),tutar:tu,odeme:g('kasaOdeme')||'nakit'};
   var tekrarVal = g('kasaTekrar');
   if(tekrarVal) k.tekrar = tekrarVal;
   // Fatura eşleştirme

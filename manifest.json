@@ -1,0 +1,22 @@
+{
+  "name": "Göker Lojistik CRM",
+  "short_name": "Göker CRM",
+  "description": "Göker Lojistik iş yönetim ve fatura sistemi",
+  "start_url": "/goker/",
+  "scope": "/goker/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#112240",
+  "orientation": "portrait-primary",
+  "lang": "tr",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["business", "productivity"],
+  "screenshots": []
+}

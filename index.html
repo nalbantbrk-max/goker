@@ -3104,6 +3104,23 @@ body.sidebar-expanded .tab-panel.active {
           <label>IBAN EUR</label>
           <input type="text" id="sirketIbanEur" placeholder="TR71 0006 4000 0024 2170 6238 39" oninput="saveSirketProfil()" style="font-family:monospace;font-size:12px">
         </div>
+        <div class="field full" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
+          <label style="font-weight:700">Fatura Logosu</label>
+          <div style="display:flex;align-items:center;gap:12px;margin-top:8px;flex-wrap:wrap">
+            <div id="sirketLogoPreview" style="width:120px;height:60px;border:1px solid var(--border);border-radius:8px;background:var(--surface2);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0">
+              <span style="font-size:11px;color:var(--muted)" id="sirketLogoHint">Logo yok</span>
+              <img id="sirketLogoImg" src="" style="max-width:100%;max-height:100%;display:none;object-fit:contain">
+            </div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <label style="background:var(--accent);color:#111;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:700;display:inline-block">
+                📎 Logo Seç (PNG/JPG)
+                <input type="file" id="sirketLogoFile" accept="image/*" style="display:none" onchange="handleLogoUpload(this)">
+              </label>
+              <button onclick="clearSirketLogo()" style="background:rgba(232,64,64,0.1);border:1px solid var(--red);color:var(--red);padding:7px 16px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:700;font-family:'DM Sans',sans-serif">✕ Logoyu Temizle</button>
+            </div>
+          </div>
+          <div style="font-size:10px;color:var(--muted);margin-top:6px">Logo yoksa varsayılan Göker logosu kullanılır.</div>
+        </div>
       </div>
       <div id="sirketKayitMsg" style="margin-top:10px;font-size:12px;color:var(--green);display:none">✓ Kaydedildi</div>
     </div>
@@ -12622,6 +12639,37 @@ function loadSirketProfil() {
   set('sirketIbanTl',  p.ibanTl);
   set('sirketIbanUsd', p.ibanUsd);
   set('sirketIbanEur', p.ibanEur);
+  // Logo preview güncelle
+  var logoImg = document.getElementById('sirketLogoImg');
+  var logoHint = document.getElementById('sirketLogoHint');
+  if (logoImg && logoHint) {
+    if (p.logo) {
+      logoImg.src = p.logo; logoImg.style.display = ''; logoHint.style.display = 'none';
+    } else {
+      logoImg.src = ''; logoImg.style.display = 'none'; logoHint.style.display = '';
+    }
+  }
+}
+
+function handleLogoUpload(input) {
+  var file = input.files[0]; if (!file) return;
+  if (file.size > 500*1024) { showToast('Logo 500KB\'dan küçük olmalı', 'error'); return; }
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    sirketProfil.logo = e.target.result;
+    sbSet('sirket', sirketProfil);
+    loadSirketProfil();
+    showToast('✓ Logo kaydedildi');
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearSirketLogo() {
+  if (!confirm('Logo kaldırılsın mı? Varsayılan Göker logosu kullanılacak.')) return;
+  sirketProfil.logo = null;
+  sbSet('sirket', sirketProfil);
+  loadSirketProfil();
+  showToast('✓ Logo kaldırıldı');
 }
 
 var _sirketSaveTimer = null;

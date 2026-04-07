@@ -8357,7 +8357,7 @@ function renderFaturalar() {
       + '<td><div style="display:flex;gap:4px">'
       + '<button onclick="editFatura('+f.id+')" style="background:none;border:1px solid var(--border);color:var(--muted);border-radius:4px;padding:3px 8px;cursor:pointer;font-size:11px">✏️</button>'
       + '<button onclick="deleteFatura('+f.id+')" style="background:none;border:1px solid rgba(232,64,64,0.3);color:var(--red);border-radius:4px;padding:3px 8px;cursor:pointer;font-size:11px">🗑</button>'
-      + (f.durum!=='tahsil'?'<button onclick="markFaturaTahsil('+f.id+')" style="background:rgba(22,165,105,0.1);border:1px solid var(--green);color:var(--green);border-radius:4px;padding:3px 8px;cursor:pointer;font-size:10px;white-space:nowrap">✓ Tahsil</button>':'')
+      + (f.durum!=='tahsil'?'<button onclick="markFaturaTahsil('+f.id+')" style="background:rgba(22,165,105,0.1);border:1px solid var(--green);color:var(--green);border-radius:4px;padding:3px 8px;cursor:pointer;font-size:10px;white-space:nowrap">✓ Tahsil</button>':'<button onclick="revertFaturaTahsil('+f.id+')" style="background:rgba(214,137,16,0.1);border:1px solid var(--orange);color:var(--orange);border-radius:4px;padding:3px 8px;cursor:pointer;font-size:10px;white-space:nowrap">↩ Geri Al</button>')
       + '</div></td></tr>';
   }).join('');
 
@@ -8430,8 +8430,16 @@ function saveFatura() {
 function markFaturaTahsil(id) {
   if(!checkAdminRole('Fatura tahsil işlemi')) return;
   var f = faturalar.find(function(x){return x.id===id;}); if(!f) return;
+  if(!confirm(f.no + ' numaralı fatura tahsil edildi olarak işaretlensin mi?')) return;
   f.durum = 'tahsil'; saveFaturalar(); renderFaturalar();
   showToast('✓ Tahsil edildi olarak işaretlendi');
+}
+function revertFaturaTahsil(id) {
+  if(!checkAdminRole('Fatura geri alma')) return;
+  var f = faturalar.find(function(x){return x.id===id;}); if(!f) return;
+  if(!confirm(f.no + ' numaralı fatura "Bekliyor" durumuna alınsın mı?')) return;
+  f.durum = 'bekliyor'; saveFaturalar(); renderFaturalar();
+  showToast('↩ Fatura bekliyor durumuna alındı');
 }
 function deleteFatura(id) {
   if(!checkAdminRole('Fatura silme')) return;

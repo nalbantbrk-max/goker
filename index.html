@@ -262,7 +262,8 @@ header::after{
   
   /* Profit kutusu kompakt */
   .profit-box { padding:10px; }
-  .pb-row { flex-wrap:wrap; gap:6px; }
+  .pb-row { flex-direction:column!important; gap:8px; }
+  .pb-row > div { text-align:left!important; }
   .pb-item { min-width:120px; }
   
   /* İş listesi — mobil kart modu */
@@ -1256,7 +1257,7 @@ input:not([type="email"]):not([type="number"]):not([type="date"]):not([type="tel
 @media(max-width:430px){
   .kanban-board{ grid-template-columns:1fr; }
 }
-@media(max-width:500px){
+@media(max-width:768px){
   .fin-card{ grid-template-columns:1fr; }
   .fin-div-v{ display:none; }
 }

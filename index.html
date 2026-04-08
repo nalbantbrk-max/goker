@@ -11359,6 +11359,7 @@ function buildFaturaHTML(j, faturaNo) {
   if (pw) pw.innerHTML = docHTML;
   var dw = document.getElementById('faturaDocWrap');
   if (dw) dw.innerHTML = docHTML;
+  return docHTML;
 }
 
 function openWA(phone) { window.open('https://wa.me/' + phone, '_blank'); }

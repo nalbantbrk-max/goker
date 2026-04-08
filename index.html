@@ -1194,15 +1194,24 @@ input:not([type="email"]):not([type="number"]):not([type="date"]):not([type="tel
   .kdv-row{flex-direction:column!important}
   .kdv-row input,.kdv-row select{width:100%!important}
   /* Modal'lar mobilde alt-sheet olarak aç */
-  .sf-modal-overlay{align-items:flex-end!important;padding:0 0 80px!important}
-  .sf-modal,.sf-modal-box{border-radius:20px 20px 0 0!important;max-height:85vh!important;width:100%!important;max-width:100%!important;overflow-y:auto!important;overscroll-behavior:contain!important;-webkit-overflow-scrolling:touch!important}
+  .sf-modal-overlay{align-items:flex-end!important;padding:0 0 60px!important}
+  .sf-modal,.sf-modal-box{border-radius:20px 20px 0 0!important;max-height:calc(88dvh - 60px)!important;width:100%!important;max-width:100%!important;overflow-y:auto!important;overscroll-behavior:contain!important;-webkit-overflow-scrolling:touch!important}
   #modal{align-items:flex-end!important;padding:0!important}
-  #modalBox{border-radius:20px 20px 0 0!important;max-height:92vh!important;width:100%!important;max-width:100%!important;padding:20px!important;overflow-y:auto!important;overscroll-behavior:contain!important;-webkit-overflow-scrolling:touch!important}
+  #modalBox{border-radius:20px 20px 0 0!important;max-height:88dvh!important;width:100%!important;max-width:100%!important;padding:20px!important;overflow-y:auto!important;overscroll-behavior:contain!important;-webkit-overflow-scrolling:touch!important}
   .belge-modal-overlay,.etk-modal-overlay{align-items:flex-end!important;padding:0!important}
-  .belge-modal-box,.etk-modal-box{border-radius:20px 20px 0 0!important;max-height:92vh!important;width:100%!important;max-width:100%!important;padding:20px!important}
+  .belge-modal-box,.etk-modal-box{border-radius:20px 20px 0 0!important;max-height:88dvh!important;width:100%!important;max-width:100%!important;padding:20px!important;overflow-y:auto!important;overscroll-behavior:contain!important;-webkit-overflow-scrolling:touch!important}
   /* Eksik modaller — alt-sheet */
   .route-compare-modal,.aysonu-overlay,.fatura-uret-overlay,.kbelge-modal-overlay{align-items:flex-end!important;padding:0!important}
-  .route-compare-box,.aysonu-box,.fatura-uret-box,.kbelge-modal{border-radius:20px 20px 0 0!important;max-height:92vh!important;width:100%!important;max-width:100%!important;overflow-y:auto!important;overflow-x:hidden!important}
+  .route-compare-box,.aysonu-box,.fatura-uret-box,.kbelge-modal{border-radius:20px 20px 0 0!important;max-height:88dvh!important;width:100%!important;max-width:100%!important;overflow-y:auto!important;overflow-x:hidden!important}
+  /* Modal başlığı sticky — X butonu scroll sırasında kaybolmaz */
+  .sf-modal-title,.belge-modal-box>div:first-child,.etk-modal-box>div:first-child{
+    position:sticky!important;top:0!important;
+    background:var(--surface)!important;
+    z-index:10!important;
+    padding-bottom:10px!important;
+    border-bottom:1px solid var(--border)!important;
+    margin-bottom:8px!important;
+  }
   /* Grid'ler — üç sütun → iki sütun */
   .aysonu-kpi-grid,.yedek-stats,.musdef-stats{grid-template-columns:1fr 1fr!important}
   /* Rapor filtre satırı — butonlar dikey */
@@ -1227,7 +1236,7 @@ input:not([type="email"]):not([type="number"]):not([type="date"]):not([type="tel
   #modal{padding-top:max(env(safe-area-inset-top,0px),12px)!important}
   .sf-modal-overlay,.belge-modal-overlay,.etk-modal-overlay,
   .route-compare-modal,.aysonu-overlay,.fatura-uret-overlay,.kbelge-modal-overlay{
-    padding-top:max(env(safe-area-inset-top,0px),12px)!important
+    padding-top:max(env(safe-area-inset-top,0px),20px)!important
   }
   /* Modal başlığını sticky yap — scroll sırasında kapat butonu görünür kalır */
   #modalTitle{

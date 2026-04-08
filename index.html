@@ -4039,6 +4039,15 @@ body.sidebar-expanded .tab-panel.active {
   } else {
     // Profil çek → company_id ve role al
     const { data: _prof } = await window_supabase.from('profiles').select('company_id,role,full_name').eq('id', session.user.id).single();
+    // customer_portal rolü bu sisteme giremez
+    if (_prof && _prof.role === 'customer_portal') {
+      await window_supabase.auth.signOut();
+      var _ov2 = document.getElementById('loginOverlay');
+      if (_ov2) _ov2.style.display = 'flex';
+      var _err = document.getElementById('loginError');
+      if (_err) { _err.textContent = 'Bu hesap yalnızca müşteri portalına erişebilir.'; _err.style.display = 'block'; }
+      return;
+    }
     window._gkCompanyId = _prof ? _prof.company_id : null;
     window._gkRole = _prof ? _prof.role : 'viewer';
     window._gkUserEmail = session.user.email || '';
@@ -4094,6 +4103,12 @@ body.sidebar-expanded .tab-panel.active {
     } else {
       // Profil çek → company_id ve role al
       const { data: _lProf } = await window_supabase.from('profiles').select('company_id,role,full_name').eq('id', data.user.id).single();
+      if (_lProf && _lProf.role === 'customer_portal') {
+        await window_supabase.auth.signOut();
+        if(btn) { btn.textContent = 'Giriş Yap'; btn.disabled = false; }
+        if(emsg) { emsg.textContent = 'Bu hesap yalnızca müşteri portalına erişebilir.'; emsg.style.display = 'block'; }
+        return;
+      }
       window._gkCompanyId = _lProf ? _lProf.company_id : null;
       window._gkRole = _lProf ? _lProf.role : 'viewer';
       window._gkUserEmail = data.user.email || '';

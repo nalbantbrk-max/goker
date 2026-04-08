@@ -1509,24 +1509,36 @@ const db = window.supabase.createClient(SUPA_URL, SUPA_KEY);
 let allData = [];
 let filteredData = [];
 let currentUser = null;
+let currentToken = null;
 let companyId = null;
 
 // ════════════════════════════════════════
 // UYGULAMA BAŞLATMA
 // ════════════════════════════════════════
-(async function init() {
-  const { data: { session } } = await db.auth.getSession();
-  if (session && session.user) {
-    currentUser = session.user;
-    await showDashboard();
-  }
+(function init() {
+  // LocalStorage'dan session oku — db.auth.getSession() async bekleme sorunu yaşıyor
+  try {
+    var raw = localStorage.getItem('sb-kdadkibbhejfmusuysif-auth-token');
+    if (raw) {
+      var sess = JSON.parse(raw);
+      if (sess && sess.user && sess.access_token) {
+        currentUser = sess.user;
+        currentToken = sess.access_token;
+        showDashboard();
+        return;
+      }
+    }
+  } catch(e) {}
+  showLogin();
 
-  // Auth durum değişikliklerini dinle
-  db.auth.onAuthStateChange(async (event, session) => {
+  // Giriş sonrası session değişikliği
+  db.auth.onAuthStateChange(function(event, session) {
     if (event === 'SIGNED_IN' && session) {
       currentUser = session.user;
-      await showDashboard();
+      currentToken = session.access_token;
+      showDashboard();
     } else if (event === 'SIGNED_OUT') {
+      currentToken = null;
       showLogin();
     }
   });
@@ -1597,10 +1609,12 @@ document.getElementById('login-form').addEventListener('keydown', function(e) {
 // ÇIKIŞ
 // ════════════════════════════════════════
 async function handleLogout() {
-  await db.auth.signOut();
+  try { await db.auth.signOut(); } catch(e) {}
+  localStorage.removeItem('sb-kdadkibbhejfmusuysif-auth-token');
   allData = [];
   filteredData = [];
   currentUser = null;
+  currentToken = null;
   companyId = null;
   showLogin();
 }
@@ -1632,44 +1646,36 @@ async function showDashboard() {
 // ════════════════════════════════════════
 // VERİ YÜKLEME
 // ════════════════════════════════════════
+function getAuthHeaders() {
+  var tok = currentToken;
+  if (!tok) {
+    try { tok = JSON.parse(localStorage.getItem('sb-kdadkibbhejfmusuysif-auth-token')).access_token; } catch(e) {}
+  }
+  return {
+    'apikey': SUPA_KEY,
+    'Authorization': 'Bearer ' + tok,
+    'Content-Type': 'application/json'
+  };
+}
+
 async function loadCompanyId() {
   try {
-    const { data: profile, error } = await db
-      .from('profiles')
-      .select('customer_company_id')
-      .eq('id', currentUser.id)
-      .single();
-
-    if (error || !profile) {
-      // Profil yoksa user_id ile direkt dene
-      companyId = null;
-      showToast('Profil bilgisi bulunamadı, tüm veriler yükleniyor.', 'info');
-    } else {
-      companyId = profile.customer_company_id;
-    }
-
-    await loadPortalData();
-
-  } catch (err) {
-    showToast('Profil yüklenirken hata oluştu.', 'error');
-    await loadPortalData();
+    var r = await fetch(SUPA_URL + '/rest/v1/profiles?select=customer_company_id&id=eq.' + currentUser.id + '&limit=1', { headers: getAuthHeaders() });
+    var rows = await r.json();
+    companyId = (rows && rows[0]) ? rows[0].customer_company_id : null;
+  } catch(e) {
+    companyId = null;
   }
+  await loadPortalData();
 }
 
 async function loadPortalData() {
   try {
-    let query = db
-      .from('portal_data')
-      .select('*')
-      .order('tarih', { ascending: false });
-
-    if (companyId) {
-      query = query.eq('customer_company_id', companyId);
-    }
-
-    const { data, error } = await query;
-
-    if (error) throw error;
+    var url = SUPA_URL + '/rest/v1/portal_data?select=*&order=tarih.desc';
+    if (companyId) url += '&customer_company_id=eq.' + companyId;
+    var r = await fetch(url, { headers: getAuthHeaders() });
+    var data = await r.json();
+    if (!Array.isArray(data)) throw new Error(data.message || 'Veri alınamadı');
 
     allData = data || [];
     filteredData = [...allData];

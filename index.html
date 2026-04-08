@@ -4045,6 +4045,48 @@ body.sidebar-expanded .tab-panel.active {
   </div><script>
 // ── GİRİŞ / AUTH YÖNETİMİ ──
 // ── GİRİŞ / AUTH YÖNETİMİ (SUPABASE CLOUD) ──
+
+// gkGiris IIFE dışında tanımlanmalı — getSession() beklerken buton çalışabilsin
+window.gkGiris = async function(){
+  var eInp = document.getElementById('loginEmailInput');
+  var pInp = document.getElementById('loginPwInput');
+  var em = eInp ? eInp.value.trim() : '';
+  var pw = pInp ? pInp.value : '';
+  var emsg = document.getElementById('loginErrMsg');
+  if(emsg) emsg.style.display = 'none';
+  var btn = document.getElementById('loginBtn');
+  if(btn) { btn.textContent = 'Bağlanıyor...'; btn.disabled = true; }
+  const { data, error } = await window_supabase.auth.signInWithPassword({ email: em, password: pw });
+  if(btn) { btn.textContent = 'Giriş Yap'; btn.disabled = false; }
+  if(error){
+    if(pInp){ pInp.classList.add('login-error'); setTimeout(function(){ pInp.classList.remove('login-error'); }, 400); }
+    if(eInp){ eInp.classList.add('login-error'); setTimeout(function(){ eInp.classList.remove('login-error'); }, 400); }
+    if(emsg){
+      if(error.message.includes('Invalid login credentials')) { emsg.textContent = 'Hata: E-Posta veya Şifre yanlış.'; }
+      else { emsg.textContent = 'Bağlantı Hatası: ' + error.message; }
+      emsg.style.display='block';
+    }
+  } else {
+    const { data: _lProf } = await window_supabase.from('profiles').select('company_id,role,full_name').eq('id', data.user.id).single();
+    if (_lProf && _lProf.role === 'customer_portal') {
+      await window_supabase.auth.signOut();
+      if(btn) { btn.textContent = 'Giriş Yap'; btn.disabled = false; }
+      if(emsg) { emsg.textContent = 'Bu hesap yalnızca müşteri portalına erişebilir.'; emsg.style.display = 'block'; }
+      return;
+    }
+    window._gkCompanyId = _lProf ? _lProf.company_id : null;
+    window._gkRole = _lProf ? _lProf.role : 'viewer';
+    window._gkUserEmail = data.user.email || '';
+    window._gkUserName = (_lProf && _lProf.full_name) ? _lProf.full_name : data.user.email;
+    if(typeof updateUserAvatar==='function') updateUserAvatar();
+    sessionStorage.setItem('gk_auth', '1');
+    document.body.classList.add('gk-authed');
+    var ov = document.getElementById('loginOverlay');
+    if(ov){ ov.style.opacity='0'; ov.style.transition='opacity .28s'; setTimeout(function(){ ov.remove(); },300); }
+    if(typeof window._safeInit==='function') window._safeInit();
+  }
+};
+
 (async function(){
   // Sayfa açılışında anlık oturum kontrolü
   const { data: { session } } = await window_supabase.auth.getSession();
@@ -4086,61 +4128,7 @@ body.sidebar-expanded .tab-panel.active {
     }
   });
 
-  window.gkGiris = async function(){
-    var eInp = document.getElementById('loginEmailInput');
-    var pInp = document.getElementById('loginPwInput');
-    var em = eInp ? eInp.value.trim() : '';
-    var pw = pInp ? pInp.value : '';
-    
-    var emsg = document.getElementById('loginErrMsg');
-    if(emsg) emsg.style.display = 'none';
-
-    var btn = document.getElementById('loginBtn');
-    if(btn) { btn.textContent = 'Bağlanıyor...'; btn.disabled = true; }
-    
-    const { data, error } = await window_supabase.auth.signInWithPassword({
-      email: em,
-      password: pw
-    });
-    
-    if(btn) { btn.textContent = 'Giriş Yap'; btn.disabled = false; }
-
-    if(error){
-      if(pInp){ pInp.classList.add('login-error'); setTimeout(function(){ pInp.classList.remove('login-error'); }, 400); }
-      if(eInp){ eInp.classList.add('login-error'); setTimeout(function(){ eInp.classList.remove('login-error'); }, 400); }
-      if(emsg){ 
-        if(error.message.includes('Invalid login credentials')) {
-          emsg.textContent = 'Hata: E-Posta veya Şifre yanlış.'; 
-        } else {
-          emsg.textContent = 'Bağlantı Hatası: ' + error.message; 
-        }
-        emsg.style.display='block'; 
-      }
-    } else {
-      // Profil çek → company_id ve role al
-      const { data: _lProf } = await window_supabase.from('profiles').select('company_id,role,full_name').eq('id', data.user.id).single();
-      if (_lProf && _lProf.role === 'customer_portal') {
-        await window_supabase.auth.signOut();
-        if(btn) { btn.textContent = 'Giriş Yap'; btn.disabled = false; }
-        if(emsg) { emsg.textContent = 'Bu hesap yalnızca müşteri portalına erişebilir.'; emsg.style.display = 'block'; }
-        return;
-      }
-      window._gkCompanyId = _lProf ? _lProf.company_id : null;
-      window._gkRole = _lProf ? _lProf.role : 'viewer';
-      window._gkUserEmail = data.user.email || '';
-      window._gkUserName = (_lProf && _lProf.full_name) ? _lProf.full_name : data.user.email;
-      if(typeof updateUserAvatar==='function') updateUserAvatar();
-      sessionStorage.setItem('gk_auth', '1');
-      document.body.classList.add('gk-authed');
-      var ov = document.getElementById('loginOverlay');
-      if(ov){
-        ov.style.opacity='0';
-        ov.style.transition='opacity .28s';
-        setTimeout(function(){ ov.remove(); },300);
-      }
-      if(typeof window._safeInit==='function') window._safeInit();
-    }
-  };
+  // gkGiris artık IIFE dışında tanımlı — yukarıya taşındı
 
   window.gkCikisYap = async function(){
     if(!confirm("Güvenli çıkış yapılsın mı?")) return;

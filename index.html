@@ -5284,6 +5284,7 @@ function _portalAuthHeaders() {
   var tok = '';
   try {
     var raw = localStorage.getItem('sb-kdadkibbhejfmusuysif-auth-token');
+    if (!raw) raw = localStorage.getItem('sb-portal-jah-auth-token');
     if (raw) tok = JSON.parse(raw).access_token || '';
   } catch(e) {}
   return {

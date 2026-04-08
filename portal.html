@@ -1501,7 +1501,9 @@ tbody td {
 // ════════════════════════════════════════
 const SUPA_URL = 'https://kdadkibbhejfmusuysif.supabase.co';
 const SUPA_KEY = 'sb_publishable_NSRXsUahlc7xRh-ZtIJ4Zg_5d6DMuB2';
-const db = window.supabase.createClient(SUPA_URL, SUPA_KEY);
+const db = window.supabase.createClient(SUPA_URL, SUPA_KEY, {
+  auth: { storageKey: 'sb-portal-jah-auth-token' }
+});
 
 // ════════════════════════════════════════
 // GLOBAL STATE
@@ -1518,7 +1520,7 @@ let companyId = null;
 (function init() {
   // LocalStorage'dan session oku — db.auth.getSession() async bekleme sorunu yaşıyor
   try {
-    var raw = localStorage.getItem('sb-kdadkibbhejfmusuysif-auth-token');
+    var raw = localStorage.getItem('sb-portal-jah-auth-token');
     if (raw) {
       var sess = JSON.parse(raw);
       if (sess && sess.user && sess.access_token) {

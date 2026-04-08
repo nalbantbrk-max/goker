@@ -5280,18 +5280,30 @@ function saveJobs(){
 }
 
 // ── PORTAL SYNC ──
-async function syncPortalData() {
-  if (!window._gkCompanyId || !window_supabase) return;
+function _portalAuthHeaders() {
+  var tok = '';
   try {
-    // Müşteri firma listesini çek (portal'a kayıtlı olanlar)
-    var { data: companies } = await window_supabase
-      .from('customer_companies')
-      .select('id,name')
-      .eq('owner_company_id', window._gkCompanyId)
-      .eq('portal_enabled', true);
-    if (!companies || !companies.length) return;
+    var raw = localStorage.getItem('sb-kdadkibbhejfmusuysif-auth-token');
+    if (raw) tok = JSON.parse(raw).access_token || '';
+  } catch(e) {}
+  return {
+    'apikey': 'sb_publishable_NSRXsUahlc7xRh-ZtIJ4Zg_5d6DMuB2',
+    'Authorization': 'Bearer ' + tok,
+    'Content-Type': 'application/json',
+    'Prefer': 'resolution=merge-duplicates'
+  };
+}
 
-    // Her iş kaydını ilgili customer_company ile eşleştir
+async function syncPortalData() {
+  if (!window._gkCompanyId) return;
+  var BASE = 'https://kdadkibbhejfmusuysif.supabase.co/rest/v1';
+  try {
+    // Müşteri firma listesini çek
+    var r = await fetch(BASE + '/customer_companies?select=id,name&owner_company_id=eq.' + window._gkCompanyId + '&portal_enabled=eq.true', { headers: _portalAuthHeaders() });
+    var companies = await r.json();
+    if (!Array.isArray(companies) || !companies.length) return;
+
+    // Her iş kaydını eşleştir
     var upsertRows = [];
     jobs.forEach(function(j) {
       var match = companies.find(function(c) {
@@ -5306,7 +5318,7 @@ async function syncPortalData() {
         tarih: j.date || null,
         nereden: j.origin || null,
         nereye: j.destination || null,
-        guzergah: (j.origin && j.destination) ? (j.origin + ' → ' + j.destination) : null,
+        guzergah: (j.origin && j.destination) ? (j.origin + ' \u2192 ' + j.destination) : null,
         durum: j.jobStatus || 'bekliyor',
         plaka: j.plate || null,
         sofor_ad: j.driverFirst ? (j.driverFirst + ' ' + (j.driverLast || '')).trim() : null,
@@ -5321,10 +5333,12 @@ async function syncPortalData() {
     });
 
     if (!upsertRows.length) return;
-    await window_supabase.from('portal_data').upsert(upsertRows, { onConflict: 'job_id' });
-  } catch(e) {
-    // Sessizce geç — portal sync kritik değil
-  }
+    await fetch(BASE + '/portal_data?on_conflict=job_id', {
+      method: 'POST',
+      headers: _portalAuthHeaders(),
+      body: JSON.stringify(upsertRows)
+    });
+  } catch(e) {}
 }
 
 function togglePaidWithKasa(id) {

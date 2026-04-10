@@ -4864,11 +4864,11 @@ function addJob() { try {
   var plateVal = get('driverPlakaCekici');
   var _lcStatus = (document.getElementById('lifecycleStatusVal') || {}).value || 'planned';
   var _driverRequired = (_lcStatus === 'assigned');
-  if (!get('customerName') || !get('buyPrice') || !get('sellPrice')) {
-    alert('❌ KAYDETME İŞLEMİ DURDURULDU:\n\nLütfen şu alanları eksiksiz doldurun:\n- Firma / Müşteri Adı\n- Alış Fiyatı\n- Satış Fiyatı'); return;
+  if (!get('customerName') || !get('sellPrice')) {
+    alert('❌ KAYDETME İŞLEMİ DURDURULDU:\n\nLütfen şu alanları eksiksiz doldurun:\n- Firma / Müşteri Adı\n- Satış Fiyatı'); return;
   }
-  if (_driverRequired && (!get('driverFirst') || !plateVal)) {
-    alert('❌ "Atandı" durumunda şoför adı ve araç plakası zorunludur.'); return;
+  if (_driverRequired && (!get('driverFirst') || !plateVal || !get('buyPrice'))) {
+    alert('❌ "Atandı" durumunda şoför adı, araç plakası ve alış fiyatı zorunludur.'); return;
   }
   var buy=parseFloat(get('buyPrice')), sell=parseFloat(get('sellPrice'));
   var comm=parseFloat(get('driverCommission')||0)||0;

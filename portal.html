@@ -9,6 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/apexcharts@3.45.2/dist/apexcharts.min.js"></script>
 <style>
 /* ── Değişkenler ── */
 :root {
@@ -536,6 +537,13 @@ html, body {
   background: var(--border2);
   flex-shrink: 0;
 }
+
+/* ── Charts ── */
+.charts-section { padding: 0 20px 4px; }
+.chart-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+@media(max-width:900px){ .chart-grid { grid-template-columns: 1fr; } }
+.chart-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 16px 16px 8px; }
+.chart-card-title { font-size: 12px; font-weight: 700; color: var(--text2); letter-spacing: .5px; text-transform: uppercase; margin-bottom: 4px; }
 
 /* ── Araç çubuğu ── */
 .toolbar {
@@ -1316,6 +1324,24 @@ tbody td {
       </div>
     </div>
 
+    <!-- Charts -->
+    <div class="charts-section" id="chartsSection" style="display:none">
+      <div class="chart-grid">
+        <div class="chart-card">
+          <div class="chart-card-title">Ödeme Dengesi</div>
+          <div id="chartOdeme"></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-card-title">Aylık Taşıma Trendi</div>
+          <div id="chartTrend"></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-card-title">Yükleyici / Alıcı Firma</div>
+          <div id="chartFirma"></div>
+        </div>
+      </div>
+    </div>
+
     <!-- Araç Çubuğu -->
     <div class="toolbar">
       <input
@@ -1391,8 +1417,9 @@ tbody td {
             <tr>
               <th>Tarih</th>
               <th>Güzergah</th>
-              <th>Nereden</th>
-              <th>Nereye</th>
+              <th>Yükleyici Firma</th>
+              <th>Alıcı Firma</th>
+              <th>İlgili Kişi</th>
               <th>Durum</th>
               <th>Plaka</th>
               <th>Şoför</th>
@@ -1757,6 +1784,7 @@ function renderAll() {
   renderCariOzet();
   renderTable();
   renderMobileCards();
+  renderCharts();
 }
 
 function renderKPI() {
@@ -1824,8 +1852,9 @@ function renderTable() {
       <tr style="animation:fadeSlideUp .25s cubic-bezier(.4,0,.2,1) ${delay}s both">
         <td class="td-mono">${formatDate(row.tarih)}</td>
         <td class="td-bold">${esc(row.guzergah || '—')}</td>
-        <td>${esc(row.nereden || '—')}</td>
-        <td>${esc(row.nereye || '—')}</td>
+        <td>${esc(row.yukleyici_firma || '—')}</td>
+        <td>${esc(row.alici_firma || '—')}</td>
+        <td>${esc(row.ilgili_kisi || '—')}</td>
         <td>${durumBadge}</td>
         <td class="td-mono">${esc(row.plaka || '—')}</td>
         <td>${esc(row.sofor_ad || '—')}</td>
@@ -1878,6 +1907,9 @@ function renderMobileCards() {
             <span class="m-card-field-label">Şoför</span>
             <span class="m-card-field-value">${esc(row.sofor_ad || '—')}</span>
           </div>
+          ${row.yukleyici_firma ? `<div class="m-card-field"><span class="m-card-field-label">Yükleyici</span><span class="m-card-field-value">${esc(row.yukleyici_firma)}</span></div>` : ''}
+          ${row.alici_firma ? `<div class="m-card-field"><span class="m-card-field-label">Alıcı</span><span class="m-card-field-value">${esc(row.alici_firma)}</span></div>` : ''}
+          ${row.ilgili_kisi ? `<div class="m-card-field"><span class="m-card-field-label">İlgili Kişi</span><span class="m-card-field-value">${esc(row.ilgili_kisi)}</span></div>` : ''}
           <div class="m-card-field">
             <span class="m-card-field-label">Fatura Tutarı</span>
             <span class="m-card-field-value" style="font-family:var(--font-mono);color:var(--text)">${row.fatura_tutar ? formatTL(parseFloat(row.fatura_tutar)) : '—'}</span>
@@ -1901,6 +1933,94 @@ function renderMobileCards() {
       </div>
     `;
   }).join('');
+}
+
+// ════════════════════════════════════════
+// APEXCHARTS
+// ════════════════════════════════════════
+var _charts = {};
+function renderCharts() {
+  var sec = document.getElementById('chartsSection');
+  if (!sec || !allData || !allData.length) return;
+  sec.style.display = '';
+
+  var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  var textColor = isDark ? '#94a3b8' : '#64748b';
+  var gridColor = isDark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.06)';
+  var chartBg = 'transparent';
+
+  var baseOpts = {
+    chart: { background: chartBg, toolbar: { show: false }, fontFamily: 'DM Sans, sans-serif', animations: { enabled: true, speed: 600 } },
+    theme: { mode: isDark ? 'dark' : 'light' },
+    tooltip: { theme: isDark ? 'dark' : 'light' }
+  };
+
+  // 1. ÖDEME DENGESİ — Donut
+  var odendi = allData.filter(function(r){ return r.odeme_durumu === 'odendi'; }).length;
+  var bekliyor = allData.filter(function(r){ return r.odeme_durumu !== 'odendi'; }).length;
+  if (_charts.odeme) { _charts.odeme.destroy(); }
+  _charts.odeme = new ApexCharts(document.getElementById('chartOdeme'), Object.assign({}, baseOpts, {
+    chart: Object.assign({}, baseOpts.chart, { type: 'donut', height: 200 }),
+    series: [odendi, bekliyor],
+    labels: ['Tahsil Edildi', 'Bekliyor'],
+    colors: ['#22c55e', '#f59e0b'],
+    legend: { position: 'bottom', fontSize: '12px', labels: { colors: textColor } },
+    dataLabels: { style: { fontSize: '11px' } },
+    plotOptions: { pie: { donut: { size: '65%' } } }
+  }));
+  _charts.odeme.render();
+
+  // 2. AYLIK TAŞıMA TRENDİ — Area
+  var monthMap = {};
+  allData.forEach(function(r) {
+    if (!r.tarih) return;
+    var ym = r.tarih.slice(0, 7);
+    if (!monthMap[ym]) monthMap[ym] = { adet: 0, tutar: 0 };
+    monthMap[ym].adet++;
+    monthMap[ym].tutar += parseFloat(r.fatura_tutar || 0);
+  });
+  var months = Object.keys(monthMap).sort().slice(-6);
+  var trendLabels = months.map(function(m) { var p = m.split('-'); return p[1] + '/' + p[0].slice(2); });
+  var trendAdet = months.map(function(m) { return monthMap[m].adet; });
+  if (_charts.trend) { _charts.trend.destroy(); }
+  _charts.trend = new ApexCharts(document.getElementById('chartTrend'), Object.assign({}, baseOpts, {
+    chart: Object.assign({}, baseOpts.chart, { type: 'area', height: 200, sparkline: { enabled: false } }),
+    series: [{ name: 'Taşıma Adedi', data: trendAdet }],
+    xaxis: { categories: trendLabels, labels: { style: { colors: textColor, fontSize: '11px' } } },
+    yaxis: { labels: { style: { colors: textColor, fontSize: '11px' } } },
+    colors: ['#6366f1'],
+    fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.4, opacityTo: 0.05 } },
+    stroke: { curve: 'smooth', width: 2 },
+    grid: { borderColor: gridColor },
+    dataLabels: { enabled: false }
+  }));
+  _charts.trend.render();
+
+  // 3. YÜKLEYİCİ / ALICI FİRMA — Horizontal Bar
+  var yukMap = {}, alMap = {};
+  allData.forEach(function(r) {
+    if (r.yukleyici_firma) yukMap[r.yukleyici_firma] = (yukMap[r.yukleyici_firma] || 0) + 1;
+    if (r.alici_firma)    alMap[r.alici_firma]    = (alMap[r.alici_firma]    || 0) + 1;
+  });
+  var topYuk = Object.keys(yukMap).sort(function(a,b){ return yukMap[b]-yukMap[a]; }).slice(0,4);
+  var topAl  = Object.keys(alMap).sort(function(a,b){ return alMap[b]-alMap[a]; }).slice(0,4);
+  var firmaLabels = topYuk.concat(topAl.filter(function(f){ return topYuk.indexOf(f)<0; })).slice(0,6);
+  if (_charts.firma) { _charts.firma.destroy(); }
+  _charts.firma = new ApexCharts(document.getElementById('chartFirma'), Object.assign({}, baseOpts, {
+    chart: Object.assign({}, baseOpts.chart, { type: 'bar', height: 200 }),
+    plotOptions: { bar: { horizontal: true, borderRadius: 4, barHeight: '60%' } },
+    series: [
+      { name: 'Yükleyici', data: firmaLabels.map(function(f){ return yukMap[f]||0; }) },
+      { name: 'Alıcı',    data: firmaLabels.map(function(f){ return alMap[f]||0; }) }
+    ],
+    xaxis: { categories: firmaLabels, labels: { style: { colors: textColor, fontSize: '10px' } } },
+    yaxis: { labels: { style: { colors: textColor, fontSize: '10px' }, maxWidth: 100 } },
+    colors: ['#6366f1', '#22c55e'],
+    grid: { borderColor: gridColor },
+    dataLabels: { enabled: false },
+    legend: { position: 'top', fontSize: '11px', labels: { colors: textColor } }
+  }));
+  _charts.firma.render();
 }
 
 // ════════════════════════════════════════

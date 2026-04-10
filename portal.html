@@ -1370,20 +1370,26 @@ tbody td {
         placeholder="Güzergah, plaka, şoför ara..."
         oninput="applyFilters()"
       >
-      <input
-        type="date"
-        class="toolbar-input toolbar-date"
-        id="filter-start"
-        onchange="applyFilters()"
-        title="Başlangıç tarihi"
-      >
-      <input
-        type="date"
-        class="toolbar-input toolbar-date"
-        id="filter-end"
-        onchange="applyFilters()"
-        title="Bitiş tarihi"
-      >
+      <div style="display:flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:0 10px;height:38px;flex-shrink:0">
+        <span style="font-size:13px;white-space:nowrap;color:var(--muted);font-weight:600;letter-spacing:.3px">📅 Dönem</span>
+        <input
+          type="date"
+          class="toolbar-date"
+          id="filter-start"
+          onchange="applyFilters()"
+          title="Başlangıç tarihi"
+          style="background:transparent;border:none;outline:none;color:var(--text);font-family:'DM Sans',sans-serif;font-size:12px;padding:0;cursor:pointer"
+        >
+        <span style="color:var(--muted);font-size:12px">→</span>
+        <input
+          type="date"
+          class="toolbar-date"
+          id="filter-end"
+          onchange="applyFilters()"
+          title="Bitiş tarihi"
+          style="background:transparent;border:none;outline:none;color:var(--text);font-family:'DM Sans',sans-serif;font-size:12px;padding:0;cursor:pointer"
+        >
+      </div>
       <select class="toolbar-select" id="filter-durum" onchange="applyFilters()">
         <option value="">Tüm Durumlar</option>
         <option value="bekliyor">Bekliyor</option>

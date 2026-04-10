@@ -1760,17 +1760,29 @@ async function loadCompanyId() {
   } catch(e) {
     companyId = null;
   }
-  // Şirket adını çek — kolon adı bilinmiyor, select=* ile tüm alanları al
+  // Şirket adını çek — önce profiles join dene (RLS dostu), sonra doğrudan tablo
   if (companyId) {
     try {
-      var r2 = await fetch(SUPA_URL + '/rest/v1/customer_companies?select=*&id=eq.' + companyId + '&limit=1', { headers: getAuthHeaders() });
+      // profiles tablosu üzerinden FK join — portal user'ın erişimi var
+      var r2 = await fetch(SUPA_URL + '/rest/v1/profiles?select=customer_companies(*)&id=eq.' + currentUser.id + '&limit=1', { headers: getAuthHeaders() });
       var rows2 = await r2.json();
-      if (rows2 && rows2[0]) {
-        var row = rows2[0];
-        // Olası kolon adlarını dene
-        companyName = row.name || row.company_name || row.firma_adi || row.title || row.ad || null;
+      if (rows2 && rows2[0] && rows2[0].customer_companies) {
+        var cRow = Array.isArray(rows2[0].customer_companies) ? rows2[0].customer_companies[0] : rows2[0].customer_companies;
+        companyName = (cRow && (cRow.name || cRow.company_name || cRow.firma_adi || cRow.title || cRow.ad)) || null;
       }
     } catch(e) { companyName = null; }
+    // FK join çalışmadıysa direkt dene
+    if (!companyName) {
+      try {
+        var r3 = await fetch(SUPA_URL + '/rest/v1/customer_companies?select=*&id=eq.' + companyId + '&limit=1', { headers: getAuthHeaders() });
+        var rows3 = await r3.json();
+        if (Array.isArray(rows3) && rows3[0]) {
+          var row3 = rows3[0];
+          companyName = row3.name || row3.company_name || row3.firma_adi || row3.title || row3.ad || null;
+        }
+        console.log('[portal] customer_companies yanıtı:', rows3);
+      } catch(e) { console.warn('[portal] company fetch hata:', e); }
+    }
   }
   // Header şirket adını güncelle
   var nameEl = document.getElementById('header-company-name');
@@ -1786,7 +1798,8 @@ async function loadPortalData() {
     var data = await r.json();
     if (!Array.isArray(data)) throw new Error(data.message || 'Veri alınamadı');
 
-    allData = data || [];
+    // Taslak işleri portaldan gizle (lifecycle_status === 'draft')
+    allData = (data || []).filter(function(r){ return r.lifecycle_status !== 'draft'; });
     filteredData = [...allData];
 
     renderAll();
@@ -2108,13 +2121,21 @@ function renderCharts() {
   if (_charts.trend) { _charts.trend.destroy(); _charts.trend = null; }
   _charts.trend = new ApexCharts(document.getElementById('chartTrend'), {
     chart: {
-      type: 'area', height: 230, background: cardBg,
+      type: 'bar', height: 230, background: cardBg,
       toolbar: { show: false },
       fontFamily: "'DM Sans', sans-serif",
       animations: baseAnim,
-      dropShadow: { enabled: true, top: 4, left: 0, blur: 12, color: '#818cf8', opacity: 0.35 }
+      dropShadow: { enabled: true, top: 6, left: 0, blur: 14, color: '#818cf8', opacity: 0.4 }
     },
     series: [{ name: 'Taşıma', data: trendData }],
+    plotOptions: {
+      bar: {
+        borderRadius: 7,
+        borderRadiusApplication: 'end',
+        columnWidth: trendData.length <= 3 ? '35%' : trendData.length <= 6 ? '50%' : '65%',
+        distributed: true
+      }
+    },
     xaxis: {
       categories: trendLabels,
       axisBorder: { show: false }, axisTicks: { show: false },
@@ -2124,32 +2145,30 @@ function renderCharts() {
       min: 0, tickAmount: 3,
       labels: { style: { colors: textColor, fontSize: '11px' }, formatter: function(v){ return Math.round(v); } }
     },
-    colors: ['#818cf8'],
+    colors: trendData.map(function(_, i) {
+      // Son bar daha parlak — gradient efekti için
+      var intensity = trendData.length > 1 ? 0.45 + 0.55 * (i / (trendData.length - 1)) : 1;
+      var r = Math.round(99  + (129 - 99)  * (1 - intensity));
+      var g = Math.round(102 + (140 - 102) * (1 - intensity));
+      var b = Math.round(241 + (248 - 241) * (1 - intensity));
+      return 'rgb(' + r + ',' + g + ',' + b + ')';
+    }),
     fill: {
       type: 'gradient',
-      gradient: {
-        shadeIntensity: 1, type: 'vertical',
-        colorStops: [[
-          { offset: 0,   color: '#818cf8', opacity: 0.5 },
-          { offset: 100, color: '#818cf8', opacity: 0.02 }
-        ]]
-      }
-    },
-    stroke: { curve: 'smooth', width: 3, colors: ['#818cf8'] },
-    markers: {
-      size: trendData.length <= 8 ? 5 : 0,
-      colors: ['#818cf8'],
-      strokeColors: isLight ? '#fff' : '#0d1526',
-      strokeWidth: 2,
-      hover: { size: 7 }
+      gradient: { shade: 'light', type: 'vertical', shadeIntensity: 0.4, gradientToColors: ['#4f46e5'], stops: [0, 100] }
     },
     grid: { borderColor: gridColor, strokeDashArray: 4, padding: { left: 2, right: 6 } },
-    dataLabels: { enabled: false },
+    dataLabels: {
+      enabled: trendData.length <= 6,
+      style: { fontSize: '11px', fontWeight: 700, colors: [text2Color] },
+      offsetY: -6,
+      formatter: function(v) { return v; }
+    },
+    legend: { show: false },
     tooltip: {
       theme: tooltipTheme,
       style: { fontSize: '12px', fontFamily: "'DM Sans', sans-serif" },
-      y: { formatter: function(v) { return v + ' taşıma'; } },
-      marker: { show: true }
+      y: { formatter: function(v) { return v + ' taşıma'; } }
     }
   });
   _charts.trend.render();

@@ -2572,6 +2572,10 @@ body.sidebar-expanded .tab-panel.active {
             <label>Fiş / Fatura No</label>
             <input type="text" id="fisNo" placeholder="Fatura veya irsaliye no...">
           </div>
+          <div class="field">
+            <label>Müşteri Ref. No</label>
+            <input type="text" id="refNo" placeholder="Müşteri referans numarası...">
+          </div>
         </div>
       </div>
       <div class="sf-form-section">
@@ -4892,6 +4896,7 @@ function addJob() { try {
     isSahibi:getIsSahibi(),
     odemeTipi:(document.getElementById('odemeTipi')?document.getElementById('odemeTipi').value:''),
     fisNo:(document.getElementById('fisNo')?document.getElementById('fisNo').value.trim():''),
+    refNo:(document.getElementById('refNo')?document.getElementById('refNo').value.trim():''),
     vehicleType:get('vehicleType'),
     plate: normalizePlakaTxt(get('driverPlakaCekici')),
     plateDorse: isTir ? normalizePlakaTxt(get('driverPlakaDorse')) : '',
@@ -4967,7 +4972,7 @@ function clearForm(){
   ['customerName','contactFirst','contactLast','cargo','origin','destination',
    'loaderFirm','receiverFirm','driverFirst','driverLast','driverPhone','driverTC',
    'driverPlakaCekici','driverPlakaDorse','buyPrice','sellPrice','driverCommission',
-   'notes','teslimTarih','fisNo'].forEach(function(id){
+   'notes','teslimTarih','fisNo','refNo'].forEach(function(id){
     var el = document.getElementById(id); if(el) el.value = '';
   });
   var vt = document.getElementById('vehicleType'); if(vt) vt.value = '';
@@ -5352,6 +5357,7 @@ async function syncPortalData() {
         fatura_net: j.sellPrice ? parseFloat(j.sellPrice) : null,
         fatura_tutar: j.sellTotal ? parseFloat(j.sellTotal) : null,
         fatura_no: j.fisNo || null,
+        ref_no: j.refNo || null,
         odeme_durumu: j.paid ? 'odendi' : 'bekliyor',
         notlar: j.notes || null,
         updated_at: new Date().toISOString()

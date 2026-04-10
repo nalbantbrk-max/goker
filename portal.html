@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/apexcharts@3.45.2/dist/apexcharts.min.js"></script>
 <style>
 /* ── Değişkenler ── */
@@ -2365,36 +2365,103 @@ function exportExcel() {
   }
 
   try {
-    const rows = filteredData.map(r => ({
-      'Tarih':          r.tarih || '',
-      'Güzergah':       r.guzergah || '',
-      'Nereden':        r.nereden || '',
-      'Nereye':         r.nereye || '',
-      'Durum':          r.durum || '',
-      'Plaka':          r.plaka || '',
-      'Şoför':          r.sofor_ad || '',
-      'Yük Tipi':       r.yuk_tipi || '',
-      'KG':             r.kg || '',
-      'Fatura Tutarı':  r.fatura_tutar || '',
-      'Fatura No':      r.fatura_no || '',
-      'Ödeme Durumu':   r.odeme_durumu || '',
-      'Notlar':         r.notlar || '',
-    }));
+    // ── Renk paleti (FORGE markası) ──
+    var C_HEADER_BG   = '1E293B';  // koyu lacivert
+    var C_HEADER_FG   = 'F59E0B';  // altın sarı
+    var C_ROW_ODD     = 'FFFFFF';  // beyaz
+    var C_ROW_EVEN    = 'FFFBEB';  // mat sarı açık ton
+    var C_BORDER      = 'E2E8F0';  // hafif gri kenarlık
 
-    const ws = XLSX.utils.json_to_sheet(rows);
-
-    // Sütun genişlikleri
-    ws['!cols'] = [
-      {wch:12},{wch:20},{wch:16},{wch:16},{wch:14},{wch:12},
-      {wch:16},{wch:14},{wch:10},{wch:16},{wch:12},{wch:14},{wch:28}
+    var HEADERS = [
+      'Tarih', 'Güzergah', 'Yükleyici Firma', 'Alıcı Firma', 'İlgili Kişi',
+      'Yük Cinsi', 'Durum', 'Plaka', 'Şoför',
+      'Fatura Tutarı', 'Fatura No', 'Ödeme Durumu', 'Notlar'
     ];
 
-    const wb = XLSX.utils.book_new();
+    var COL_WIDTHS = [12, 26, 22, 22, 18, 20, 14, 12, 18, 16, 14, 14, 30];
+
+    var DURUM_MAP = {
+      'bekliyor': 'Bekliyor', 'yolda': 'Yolda', 'tamamlandi': 'Tamamlandı',
+      'tamamlandı': 'Tamamlandı', 'iptal': 'İptal'
+    };
+    var ODEME_MAP = { 'odendi': 'Tahsil Edildi', 'bekliyor': 'Bekliyor' };
+
+    // ── Veri satırları ──
+    var dataRows = filteredData.map(function(r) {
+      return [
+        r.tarih || '',
+        r.guzergah || '',
+        r.yukleyici_firma || '',
+        r.alici_firma || '',
+        r.ilgili_kisi || '',
+        r.yuk_tipi || '',
+        DURUM_MAP[r.durum] || r.durum || '',
+        r.plaka || '',
+        r.sofor_ad || '',
+        r.fatura_tutar ? parseFloat(r.fatura_tutar) : '',
+        r.fatura_no || '',
+        ODEME_MAP[r.odeme_durumu] || r.odeme_durumu || '',
+        r.notlar || ''
+      ];
+    });
+
+    // ── Worksheet oluştur ──
+    var wsData = [HEADERS].concat(dataRows);
+    var ws = XLSX.utils.aoa_to_sheet(wsData);
+
+    // Sütun genişlikleri
+    ws['!cols'] = COL_WIDTHS.map(function(w) { return { wch: w }; });
+
+    // Satır yüksekliği
+    ws['!rows'] = [{ hpt: 22 }]; // header satırı yüksekliği
+
+    // ── Stil yardımcısı ──
+    function cellStyle(bg, fg, bold, border) {
+      return {
+        fill:      { fgColor: { rgb: bg } },
+        font:      { name: 'Calibri', sz: 10, bold: !!bold, color: { rgb: fg || '0F172A' } },
+        alignment: { vertical: 'center', wrapText: false },
+        border: border ? {
+          top:    { style: 'thin', color: { rgb: C_BORDER } },
+          bottom: { style: 'thin', color: { rgb: C_BORDER } },
+          left:   { style: 'thin', color: { rgb: C_BORDER } },
+          right:  { style: 'thin', color: { rgb: C_BORDER } }
+        } : {}
+      };
+    }
+
+    var colCount = HEADERS.length;
+    var rowCount = dataRows.length;
+
+    // Header satırı stilleri (satır 0)
+    for (var c = 0; c < colCount; c++) {
+      var cellRef = XLSX.utils.encode_cell({ r: 0, c: c });
+      if (!ws[cellRef]) ws[cellRef] = { v: HEADERS[c], t: 's' };
+      ws[cellRef].s = cellStyle(C_HEADER_BG, C_HEADER_FG, true, true);
+    }
+
+    // Veri satırları stilleri
+    for (var row = 1; row <= rowCount; row++) {
+      var isEven = row % 2 === 0;
+      var rowBg = isEven ? C_ROW_EVEN : C_ROW_ODD;
+      for (var col = 0; col < colCount; col++) {
+        var ref = XLSX.utils.encode_cell({ r: row, c: col });
+        if (!ws[ref]) ws[ref] = { v: '', t: 's' };
+        // Fatura Tutarı sütunu (index 9) → sayı formatı
+        if (col === 9 && ws[ref].v !== '') {
+          ws[ref].t = 'n';
+          ws[ref].z = '#,##0.00 ₺';
+        }
+        ws[ref].s = cellStyle(rowBg, '0F172A', false, true);
+      }
+    }
+
+    var wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Taşımalar');
 
-    const dateStr = new Date().toISOString().slice(0,10);
-    XLSX.writeFile(wb, `goker-lojistik-tasimalar-${dateStr}.xlsx`);
-    showToast(`${rows.length} kayıt Excel'e aktarıldı.`, 'success');
+    var dateStr = new Date().toISOString().slice(0, 10);
+    XLSX.writeFile(wb, 'goker-lojistik-tasimalar-' + dateStr + '.xlsx');
+    showToast(rowCount + ' kayıt Excel\'e aktarıldı.', 'success');
 
   } catch (err) {
     showToast('Excel oluşturulurken hata: ' + err.message, 'error');

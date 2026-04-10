@@ -5815,7 +5815,7 @@ function renderList() {
       // 2. Tarih (kısa: 31.03) — ileri tarihte takvim ikonu ekle
       +'<td style="'+P+';color:'+(isFuture?'var(--blue)':'var(--muted)')+';font-size:11px;white-space:nowrap">'+(isFuture?'📅 ':'')+fmtDateShort(j.date)+'</td>'
       // 3. Müşteri + badge
-      +'<td style="'+P+'"><div style="font-size:13px;font-weight:600;color:var(--text)">'+j.customerName+renderIsSahibiBadge(j.isSahibi)+(_jDraft?'<span style="margin-left:4px;font-size:9px;font-weight:700;color:#F59E0B;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.25);border-radius:4px;padding:1px 5px">📋 Taslak</span>':'')+'</div></td>'
+      +'<td style="'+P+'" title="'+j.customerName+'"><div style="font-size:13px;font-weight:600;color:var(--text)">'+shortenName(j.customerName)+renderIsSahibiBadge(j.isSahibi)+(_jDraft?'<span style="margin-left:4px;font-size:9px;font-weight:700;color:#F59E0B;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.25);border-radius:4px;padding:1px 5px">📋 Taslak</span>':'')+'</div></td>'
       // 4. Güzergah
       +'<td style="'+P+'">'
         +'<div style="font-size:11px;font-weight:500;color:var(--text2);line-height:1.4">'+(j.origin||'—')+' → '+(j.destination||'—')+'</div>'
@@ -5862,6 +5862,41 @@ function renderList() {
       +'</td>'
       +'</tr>';
   }).join('');
+}
+
+// Ticari ünvanları kısalt — sadece görüntüde, veri değişmez
+function shortenName(name) {
+  if (!name) return name;
+  var r = name.trim();
+  // En kapsamlı kalıplardan başla (sıra önemli)
+  var pats = [
+    /[\s,]+SANAYİ\s+VE\s+TİCARET\s+ANONİM\s+ŞİRKETİ\.?$/i,
+    /[\s,]+SANAYİ\s+VE\s+TİCARET\s+LİMİTED\s+ŞİRKETİ\.?$/i,
+    /[\s,]+SANAYİ\s+TİCARET\s+ANONİM\s+ŞİRKETİ\.?$/i,
+    /[\s,]+SANAYİ\s+TİCARET\s+LİMİTED\s+ŞİRKETİ\.?$/i,
+    /[\s,]+SANAYİ\s+VE\s+TİCARET\s+(?:A\.?Ş\.?|LTD\.?\s*ŞTİ\.?)\.?$/i,
+    /[\s,]+SANAYİ\s+TİCARET\s+(?:A\.?Ş\.?|LTD\.?\s*ŞTİ\.?)\.?$/i,
+    /[\s,]+İTHALAT\s+(?:VE\s+)?İHRACAT\s+(?:LİMİTED\s+ŞİRKETİ|ANONİM\s+ŞİRKETİ|A\.?Ş\.?|LTD\.?\s*ŞTİ\.?)\.?$/i,
+    /[\s,]+ANONİM\s+ŞİRKETİ\.?$/i,
+    /[\s,]+LİMİTED\s+ŞİRKETİ\.?$/i,
+    /[\s,]+LTD\.?\s*ŞTİ\.?$/i,
+    /[\s,]+A\.Ş\.?$/i,
+    /[\s,]+AŞ$/i,
+    /[\s,]+ŞTİ\.?$/i,
+    /[\s,]+SANAYİ\s+VE\s+TİCARET$/i,
+    /[\s,]+SANAYİ\s+TİCARET$/i,
+    /[\s,]+İTHALAT\s+(?:VE\s+)?İHRACAT$/i,
+    /[\s,]+İHRACAT\s+(?:VE\s+)?İTHALAT$/i,
+    /[\s,]+SANAYİ$/i,
+    /[\s,]+TİCARET$/i,
+    /[\s,]+SAN\.$/i,
+    /[\s,]+TİC\.$/i,
+  ];
+  for (var i = 0; i < pats.length; i++) {
+    var trimmed = r.replace(pats[i], '').trim();
+    if (trimmed.length >= 2) r = trimmed;
+  }
+  return r || name;
 }
 
 function fmtDate(d) {

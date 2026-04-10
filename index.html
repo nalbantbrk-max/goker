@@ -5347,7 +5347,7 @@ async function syncPortalData() {
         ilgili_kisi: j.contactFirst ? (j.contactFirst + ' ' + (j.contactLast || '')).trim() : null,
         plaka: j.plate || null,
         sofor_ad: j.driverFirst ? (j.driverFirst + ' ' + (j.driverLast || '')).trim() : null,
-        yuk_tipi: j.yukTipi || j.cargoType || null,
+        yuk_tipi: j.cargoType || null,
         kg: j.cargoWeight ? parseFloat(j.cargoWeight) : null,
         fatura_tutar: j.sellTotal ? parseFloat(j.sellTotal) : null,
         fatura_no: j.fisNo || null,

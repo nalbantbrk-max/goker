@@ -2365,6 +2365,21 @@ function exportExcel() {
   }
 
   try {
+    // Title Case — Türkçe i/İ farkı dahil
+    function tc(str) {
+      if (!str) return '';
+      return str.toLocaleLowerCase('tr-TR').replace(/(?:^|[\s\-\/,])./g, function(c) {
+        return c.toLocaleUpperCase('tr-TR');
+      });
+    }
+    // "komple"/"parsiyel" gibi iç operasyon değerlerini gizle
+    function yukCinsi(val) {
+      if (!val) return '';
+      var lower = val.toLowerCase();
+      if (lower === 'komple' || lower === 'parsiyel') return '';
+      return tc(val);
+    }
+
     // ── Renk paleti (FORGE markası) ──
     var C_HEADER_BG   = '1E293B';  // koyu lacivert
     var C_HEADER_FG   = 'F59E0B';  // altın sarı
@@ -2390,18 +2405,18 @@ function exportExcel() {
     var dataRows = filteredData.map(function(r) {
       return [
         r.tarih || '',
-        r.guzergah || '',
-        r.yukleyici_firma || '',
-        r.alici_firma || '',
-        r.ilgili_kisi || '',
-        r.yuk_tipi || '',
-        DURUM_MAP[r.durum] || r.durum || '',
-        r.plaka || '',
-        r.sofor_ad || '',
+        tc(r.guzergah || ''),
+        tc(r.yukleyici_firma || ''),
+        tc(r.alici_firma || ''),
+        tc(r.ilgili_kisi || ''),
+        yukCinsi(r.yuk_tipi || ''),
+        DURUM_MAP[r.durum] || tc(r.durum || ''),
+        (r.plaka || '').toUpperCase(),
+        tc(r.sofor_ad || ''),
         r.fatura_tutar ? parseFloat(r.fatura_tutar) : '',
         r.fatura_no || '',
-        ODEME_MAP[r.odeme_durumu] || r.odeme_durumu || '',
-        r.notlar || ''
+        ODEME_MAP[r.odeme_durumu] || tc(r.odeme_durumu || ''),
+        tc(r.notlar || '')
       ];
     });
 

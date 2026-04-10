@@ -1449,7 +1449,7 @@ tbody td {
               <th>Plaka</th>
               <th>Şoför</th>
               <th>Yük Cinsi</th>
-              <th>Fatura Tutarı</th>
+              <th>Tutar</th>
               <th>Fatura No</th>
               <th>Ödeme</th>
               <th>Belgeler</th>
@@ -1957,7 +1957,10 @@ function renderTable() {
         <td class="td-mono">${esc(row.plaka || '—')}</td>
         <td>${esc(row.sofor_ad || '—')}</td>
         <td>${row.yuk_tipi && row.yuk_tipi.toLowerCase() !== 'komple' && row.yuk_tipi.toLowerCase() !== 'parsiyel' ? esc(row.yuk_tipi) : '—'}</td>
-        <td class="td-mono td-bold" style="color:var(--text)">${row.fatura_tutar ? formatTL(parseFloat(row.fatura_tutar)) : '—'}</td>
+        <td>
+          <div class="td-mono td-bold" style="color:var(--text);font-size:13px">${row.fatura_net ? formatTL(parseFloat(row.fatura_net)) : (row.fatura_tutar ? formatTL(parseFloat(row.fatura_tutar)) : '—')}</div>
+          ${row.fatura_tutar && row.fatura_net && parseFloat(row.fatura_net) !== parseFloat(row.fatura_tutar) ? `<div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);margin-top:2px">${formatTL(parseFloat(row.fatura_tutar))} KDV dahil</div>` : ''}
+        </td>
         <td class="td-mono">${esc(row.fatura_no || '—')}</td>
         <td>${odemeBadge}</td>
         <td><div style="display:flex;gap:5px;align-items:center">${docButtons}</div></td>
@@ -2008,8 +2011,11 @@ function renderMobileCards() {
           ${row.alici_firma ? `<div class="m-card-field"><span class="m-card-field-label">Alıcı</span><span class="m-card-field-value">${esc(row.alici_firma)}</span></div>` : ''}
           ${row.ilgili_kisi ? `<div class="m-card-field"><span class="m-card-field-label">İlgili Kişi</span><span class="m-card-field-value">${esc(row.ilgili_kisi)}</span></div>` : ''}
           <div class="m-card-field">
-            <span class="m-card-field-label">Fatura Tutarı</span>
-            <span class="m-card-field-value" style="font-family:var(--font-mono);color:var(--text)">${row.fatura_tutar ? formatTL(parseFloat(row.fatura_tutar)) : '—'}</span>
+            <span class="m-card-field-label">Tutar (KDV Hariç)</span>
+            <span class="m-card-field-value" style="font-family:var(--font-mono);color:var(--text)">
+              ${row.fatura_net ? formatTL(parseFloat(row.fatura_net)) : (row.fatura_tutar ? formatTL(parseFloat(row.fatura_tutar)) : '—')}
+              ${row.fatura_tutar && row.fatura_net && parseFloat(row.fatura_net) !== parseFloat(row.fatura_tutar) ? `<span style="font-size:10px;color:var(--muted);margin-left:4px">(${formatTL(parseFloat(row.fatura_tutar))} KDV dahil)</span>` : ''}
+            </span>
           </div>
           <div class="m-card-field">
             <span class="m-card-field-label">Ödeme</span>
@@ -2389,10 +2395,10 @@ function exportExcel() {
     var HEADERS = [
       'Tarih', 'Güzergah', 'Yükleyici Firma', 'Alıcı Firma', 'İlgili Kişi',
       'Yük Cinsi', 'Durum', 'Plaka', 'Şoför',
-      'Fatura Tutarı', 'Fatura No', 'Ödeme Durumu', 'Notlar'
+      'Tutar (KDV Hariç)', 'Tutar (KDV Dahil)', 'Fatura No', 'Ödeme Durumu', 'Notlar'
     ];
 
-    var COL_WIDTHS = [12, 26, 22, 22, 18, 20, 14, 12, 18, 16, 14, 14, 30];
+    var COL_WIDTHS = [12, 26, 22, 22, 18, 20, 14, 12, 18, 18, 18, 14, 14, 30];
 
     var DURUM_MAP = {
       'bekliyor': 'Bekliyor', 'yolda': 'Yolda', 'tamamlandi': 'Tamamlandı',
@@ -2412,6 +2418,7 @@ function exportExcel() {
         DURUM_MAP[r.durum] || tc(r.durum || ''),
         (r.plaka || '').toUpperCase(),
         tc(r.sofor_ad || ''),
+        r.fatura_net ? parseFloat(r.fatura_net) : (r.fatura_tutar ? parseFloat(r.fatura_tutar) : ''),
         r.fatura_tutar ? parseFloat(r.fatura_tutar) : '',
         r.fatura_no || '',
         ODEME_MAP[r.odeme_durumu] || tc(r.odeme_durumu || ''),
@@ -2461,8 +2468,8 @@ function exportExcel() {
       for (var col = 0; col < colCount; col++) {
         var ref = XLSX.utils.encode_cell({ r: row, c: col });
         if (!ws[ref]) ws[ref] = { v: '', t: 's' };
-        // Fatura Tutarı sütunu (index 9) → sayı formatı
-        if (col === 9 && ws[ref].v !== '') {
+        // Tutar sütunları (index 9 = KDV hariç, 10 = KDV dahil) → sayı formatı
+        if ((col === 9 || col === 10) && ws[ref].v !== '') {
           ws[ref].t = 'n';
           ws[ref].z = '#,##0.00 ₺';
         }

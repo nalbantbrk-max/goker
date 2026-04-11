@@ -5845,18 +5845,9 @@ function renderList() {
         +'<div style="font-size:10px;color:'+marjColor+';margin-top:1px">%'+listMarj+'</div>'
         +masrafHtml
       +'</td>'
-      // 10. İş durumu + lifecycle badge
+      // 10. İş durumu
       +'<td style="'+P+';min-width:110px" onclick="event.stopPropagation()">'
         +'<span class="js-badge '+jobSt+'">'+jsLabel(jobSt)+'</span>'
-        +(function(){
-            var lc = j.lifecycleStatus || 'planned';
-            var lcLabels = {draft:'Taslak', planned:'Planlandı', assigned:'Atandı', completed:'Tamamlandı'};
-            var lcLabel = lcLabels[lc] || lc;
-            var soforAtaBtn = (!j.driverFirst && lc !== 'assigned' && lc !== 'completed')
-              ? '<button onclick="editJob('+j.id+')" style="display:block;margin-top:3px;background:rgba(96,165,250,.1);border:1px solid rgba(96,165,250,.3);color:var(--blue);border-radius:5px;padding:2px 7px;font-size:10px;font-weight:600;cursor:pointer;width:100%">+ Şoför Ata</button>'
-              : '';
-            return '<div style="margin-top:3px"><span class="lc-badge '+lc+'">'+lcLabel+'</span></div>' + soforAtaBtn;
-          })()
       +'</td>'
       // 11. Tahsilat
       +'<td style="'+P+'" onclick="event.stopPropagation()"><span class="status-tag '+sc+'" style="display:inline-flex;align-items:center">'+(sc==='overdue'||sc==='warning'?'<span class="unpaid-dot"></span>':'')+sl+'</span></td>'

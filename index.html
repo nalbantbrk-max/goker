@@ -1141,7 +1141,7 @@ input:not([type="email"]):not([type="number"]):not([type="date"]):not([type="tel
   border-radius:12px;margin:0 2px;transition:transform .15s;
 }
 .mob-tab-icon{
-  width:36px;height:36px;border-radius:11px;
+  width:44px;height:44px;border-radius:11px;
   display:flex;align-items:center;justify-content:center;
   transition:transform .2s,filter .2s,box-shadow .2s;
   filter:brightness(.75) saturate(.8);
@@ -1811,8 +1811,8 @@ body.sidebar-expanded .tab-panel.active {
   color: #fff;
 }
 .trend-close-btn {
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   border-radius: 8px;
   border: 1px solid var(--border);
   background: var(--surface2);
@@ -1823,6 +1823,27 @@ body.sidebar-expanded .tab-panel.active {
   justify-content: center;
   transition: background 0.15s;
 }
+/* Modal başlık × butonları — 36x36 dokunma hedefi */
+.modal-x-btn {
+  background: none;
+  border: none;
+  font-size: 22px;
+  cursor: pointer;
+  color: var(--muted);
+  line-height: 1;
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  z-index: 10;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: background .15s, color .15s;
+}
+.modal-x-btn:hover { background: var(--surface2); color: var(--text); }
 .trend-close-btn:hover {
   background: var(--border2);
   color: var(--text);
@@ -1967,6 +1988,55 @@ body.sidebar-expanded .tab-panel.active {
 .aging-lbl { font-size:9px; text-transform:uppercase; letter-spacing:1px; color:var(--muted); margin-bottom:4px; }
 .aging-val { font-size:14px; font-weight:800; font-family:'JetBrains Mono',monospace; color:var(--text); }
 @media(max-width:768px){ #arAgingCards { grid-template-columns:repeat(2,1fr) !important; } }
+
+/* ── MOBİL OPTİMİZASYON EKLENTİLERİ ── */
+
+/* 1c — Modal padding responsive (390px) */
+@media(max-width:390px) {
+  .sf-modal-overlay .sf-modal,
+  .fatura-uret-overlay > div,
+  .belge-modal-overlay > div,
+  .etk-modal-overlay > div,
+  .aysonu-overlay > div,
+  .route-compare-modal > div,
+  .kbelge-modal-overlay > div {
+    padding: 12px !important;
+    margin: 8px !important;
+  }
+}
+
+/* 1d — Dropdown list item min dokunma yüksekliği */
+.ac-item { min-height: 44px; display: flex; align-items: center; }
+.qs-item { min-height: 44px; display: flex; align-items: center; }
+.filter-drop-panel .fdp-group button { min-height: 36px; }
+
+/* 1e — Dropdown taşma önleme */
+.filter-drop-panel { max-width: calc(100vw - 32px); }
+
+/* 2a — Font-size floor: badge/label/status için mobilde minimum 11px */
+@media(max-width:768px) {
+  .badge, .status-tag, .lc-badge { font-size: 11px !important; }
+  .tab-badge { font-size: 10px !important; }
+}
+
+/* 2b — Kasa tablo mobil font */
+@media(max-width:768px) {
+  .kasa-table { font-size: 12px !important; }
+}
+
+/* 3a — 390px breakpoint */
+@media(max-width:390px) {
+  .sf-form { padding: 12px !important; }
+  .modal-content, #modal > div { padding: 12px !important; }
+  .dash-map-section { padding: 8px !important; }
+}
+
+/* 3b — Safe-area-inset modal padding-bottom */
+.sf-modal-overlay .sf-modal,
+.fatura-uret-overlay > div,
+.belge-modal-overlay > div {
+  padding-bottom: calc(20px + env(safe-area-inset-bottom));
+}
 </style>
 <!-- Google Maps API anahtarı Ayarlar > API Anahtarları'ndan yüklenir -->
 <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
@@ -3405,7 +3475,7 @@ body.sidebar-expanded .tab-panel.active {
 <!-- ŞOFÖR MODAL -->
 <div class="sf-modal-overlay" id="soforModal" onclick="if(event.target===this)closeSoforModal()">
   <div class="sf-modal" style="max-width:560px">
-    <div class="sf-modal-title" id="soforModalTitle" style="position:relative;padding-right:36px">Şoför Ekle<button onclick="closeSoforModal()" style="position:absolute;top:14px;right:16px;background:none;border:none;font-size:22px;cursor:pointer;color:var(--muted);line-height:1;padding:4px 8px;z-index:10" title="Kapat">×</button></div>
+    <div class="sf-modal-title" id="soforModalTitle" style="position:relative;padding-right:36px">Şoför Ekle<button onclick="closeSoforModal()" class="modal-x-btn" title="Kapat">×</button></div>
     <input type="hidden" id="soforEditId">
 
     <div class="sf-section">
@@ -3500,7 +3570,7 @@ body.sidebar-expanded .tab-panel.active {
 <!-- MÜŞTERİ DEFTERİ MODAL -->
 <div class="sf-modal-overlay" id="musteriModal" onclick="if(event.target===this)closeMusteriModal()">
   <div class="sf-modal">
-    <div class="sf-modal-title" id="musteriModalTitle" style="position:relative;padding-right:36px">Müşteri Ekle<button onclick="closeMusteriModal()" style="position:absolute;top:14px;right:16px;background:none;border:none;font-size:22px;cursor:pointer;color:var(--muted);line-height:1;padding:4px 8px;z-index:10" title="Kapat">×</button></div>
+    <div class="sf-modal-title" id="musteriModalTitle" style="position:relative;padding-right:36px">Müşteri Ekle<button onclick="closeMusteriModal()" class="modal-x-btn" title="Kapat">×</button></div>
     <input type="hidden" id="musteriEditId">
     <div class="sf-section">
       <div class="section-label">Firma Bilgileri</div>
@@ -3546,7 +3616,7 @@ body.sidebar-expanded .tab-panel.active {
 <!-- TEKLİF MODAL -->
 <div class="sf-modal-overlay" id="teklifModal" onclick="if(event.target===this)closeTeklifModal()">
   <div class="sf-modal-box" style="max-width:620px;max-height:90vh;overflow-y:auto">
-    <div class="sf-modal-title" style="position:relative;padding-right:40px">📝 TEKLİF<button onclick="closeTeklifModal()" style="position:absolute;top:14px;right:16px;background:none;border:none;font-size:22px;cursor:pointer;color:var(--muted);line-height:1;padding:0">×</button></div>
+    <div class="sf-modal-title" style="position:relative;padding-right:40px">📝 TEKLİF<button onclick="closeTeklifModal()" class="modal-x-btn">×</button></div>
     <input type="hidden" id="teklifEditId">
 
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
@@ -3627,7 +3697,7 @@ body.sidebar-expanded .tab-panel.active {
   <div class="sf-modal" style="max-width:760px;max-height:90vh;overflow-y:auto">
     <div class="sf-modal-title" style="position:relative;padding-right:40px">
       📦 Yük Hesaplayıcı — LDM / Hacim / Ağırlık
-      <button onclick="closeYukHesap()" style="position:absolute;top:14px;right:16px;background:none;border:none;font-size:22px;cursor:pointer;color:var(--muted);line-height:1;padding:0">×</button>
+      <button onclick="closeYukHesap()" class="modal-x-btn">×</button>
     </div>
     <div style="padding:16px 20px 20px">
 
@@ -3683,7 +3753,7 @@ body.sidebar-expanded .tab-panel.active {
 <!-- BELGE MODAL -->
 <div class="belge-modal-overlay" id="belgeModal" onclick="if(event.target===this)closeBelgeModal()">
   <div class="belge-modal-box">
-    <div class="sf-modal-title" style="position:relative;padding-right:40px">Belge Yükle<button onclick="closeBelgeModal()" style="position:absolute;top:14px;right:16px;background:none;border:none;font-size:22px;cursor:pointer;color:var(--muted);line-height:1;padding:0">×</button></div>
+    <div class="sf-modal-title" style="position:relative;padding-right:40px">Belge Yükle<button onclick="closeBelgeModal()" class="modal-x-btn">×</button></div>
     <div class="field"><label>Belge Adı *</label><input id="belgeAd" placeholder="Belge adı..."></div>
     <div class="field"><label>Kategori</label>
       <select id="belgeKat">
@@ -3720,7 +3790,7 @@ body.sidebar-expanded .tab-panel.active {
 <!-- FATURA MODAL -->
 <div class="sf-modal-overlay" id="faturaModal" onclick="if(event.target===this)closeFaturaModal()">
   <div class="sf-modal" style="max-width:900px">
-    <div class="sf-modal-title" style="position:relative;padding-right:36px">Fatura Kaydı<button onclick="closeFaturaModal()" style="position:absolute;top:14px;right:16px;background:none;border:none;font-size:22px;cursor:pointer;color:var(--muted);line-height:1;padding:4px 8px;z-index:10" title="Kapat">×</button></div>
+    <div class="sf-modal-title" style="position:relative;padding-right:36px">Fatura Kaydı<button onclick="closeFaturaModal()" class="modal-x-btn" title="Kapat">×</button></div>
     <input type="hidden" id="ftId">
     <div class="sf-two">
       <div class="field"><label>Fatura No *</label><input id="ftNo" placeholder="GKR2026-001"></div>
@@ -3858,7 +3928,7 @@ body.sidebar-expanded .tab-panel.active {
 <!-- TAKVİM ETKİNLİK MODAL -->
 <div class="etk-modal-overlay" id="etkModal" onclick="if(event.target===this)closeEtkModal()">
   <div class="sf-modal" style="max-width:400px">
-    <div class="sf-modal-title" style="position:relative;padding-right:40px">Etkinlik Ekle<button onclick="closeEtkModal()" style="position:absolute;top:14px;right:16px;background:none;border:none;font-size:22px;cursor:pointer;color:var(--muted);line-height:1;padding:0">×</button></div>
+    <div class="sf-modal-title" style="position:relative;padding-right:40px">Etkinlik Ekle<button onclick="closeEtkModal()" class="modal-x-btn">×</button></div>
     <div class="field"><label>Başlık *</label><input id="etkBaslik" placeholder="Etkinlik adı..."></div>
     <div class="sf-two">
       <div class="field"><label>Tarih *</label><input type="date" id="etkTarih"></div>
@@ -3883,7 +3953,7 @@ body.sidebar-expanded .tab-panel.active {
 <!-- TAHSİLAT MODAL -->
 <div class="sf-modal-overlay" id="tahsilatModal" onclick="if(event.target===this)closeTahsilatModal()">
   <div class="sf-modal-box" style="max-width:500px">
-    <div class="sf-modal-title" style="position:relative;padding-right:40px">💰 TAHSİLAT AL<button onclick="closeTahsilatModal()" style="position:absolute;top:14px;right:16px;background:none;border:none;font-size:22px;cursor:pointer;color:var(--muted);line-height:1;padding:0">×</button></div>
+    <div class="sf-modal-title" style="position:relative;padding-right:40px">💰 TAHSİLAT AL<button onclick="closeTahsilatModal()" class="modal-x-btn">×</button></div>
     <input type="hidden" id="thMusteri">
 
     <div class="field">
@@ -3935,7 +4005,7 @@ body.sidebar-expanded .tab-panel.active {
 <!-- KASA MODAL -->
 <div class="sf-modal-overlay" id="kasaModal" onclick="if(event.target===this)closeKasaModal()">
   <div class="sf-modal" style="max-width:400px">
-    <div class="sf-modal-title" style="position:relative;padding-right:40px">Kasa Kaydı<button onclick="closeKasaModal()" style="position:absolute;top:14px;right:16px;background:none;border:none;font-size:22px;cursor:pointer;color:var(--muted);line-height:1;padding:0">×</button></div>
+    <div class="sf-modal-title" style="position:relative;padding-right:40px">Kasa Kaydı<button onclick="closeKasaModal()" class="modal-x-btn">×</button></div>
     <input type="hidden" id="kasaEditId">
     <div class="sf-two">
       <div class="field"><label>Tarih</label><input type="date" id="kasaTarih"></div>

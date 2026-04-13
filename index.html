@@ -1285,19 +1285,33 @@ input:not([type="email"]):not([type="number"]):not([type="date"]):not([type="tel
   .sofor-tr-detail.open{
     display:block!important;
     position:fixed!important;bottom:0!important;left:0!important;right:0!important;
-    max-height:82dvh!important;overflow-y:auto!important;
+    max-height:84dvh!important;overflow-y:auto!important;
     border-radius:20px 20px 0 0!important;
-    padding:20px 20px 80px!important;
+    padding:20px 20px calc(96px + env(safe-area-inset-bottom,0px))!important;
     background:var(--surface)!important;
     z-index:500!important;
     box-shadow:0 -8px 40px rgba(0,0,0,.3)!important;
     animation:fadeSlideUp .25s cubic-bezier(.4,0,.2,1)!important;
     overscroll-behavior:contain!important;
     -webkit-overflow-scrolling:touch!important;
+    border:none!important;outline:none!important;
   }
   .sofor-tr-detail.open>td{
-    display:block!important;padding:0!important;border:none!important
+    display:block!important;padding:0!important;
+    border:none!important;outline:none!important;
+    box-shadow:none!important;
   }
+  /* table kaynaklı sarı çizgileri kaldır */
+  .sofor-tr-detail.open,
+  .sofor-tr-detail.open>td,
+  .sofor-tr-detail.open *{
+    border-left:none!important;
+    border-right:none!important;
+  }
+  .sofor-tr-detail.open .sofor-route-section{border-top:1px solid var(--border)!important}
+  .sofor-tr-detail.open .sofor-route-table td{border-bottom:1px solid rgba(150,160,190,.2)!important}
+  /* Aktif summary row sol çizgisini mobilde gizle */
+  .sofor-tr-summary.active{box-shadow:none!important}
 }
 
 /* ── MOBİL STATS ŞERİDİ (portrede çalışır, yatayda telefon ≥769px olur → tetiklenmez) ── */

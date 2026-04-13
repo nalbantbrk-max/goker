@@ -3345,7 +3345,7 @@ body.sidebar-expanded .tab-panel.active {
         <p style="font-size:12px;color:var(--muted);margin-bottom:14px">Harita, rota ve adres otomatik tamamlama özellikleri için gereklidir. <a href="https://console.cloud.google.com/apis/credentials" target="_blank" style="color:var(--accent)">Google Cloud Console</a>'dan alabilirsiniz.</p>
         <div class="field">
           <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:6px">API Anahtarı</label>
-          <input type="text" id="mapsApiKeyInput" placeholder="AIzaSy..." autocomplete="off" autocorrect="off" spellcheck="false" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;background:var(--input-bg);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:12px;box-sizing:border-box">
+          <input type="text" id="mapsApiKeyInput" placeholder="AIzaSy..." autocomplete="new-password" readonly onfocus="this.removeAttribute('readonly')" spellcheck="false" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;background:var(--input-bg);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:12px;box-sizing:border-box">
         </div>
         <div style="display:flex;gap:8px;margin-top:10px;align-items:center">
           <button onclick="saveApiAnahtarlari()" style="background:var(--accent);border:none;color:#111;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif">Kaydet &amp; Yükle</button>

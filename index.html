@@ -315,11 +315,50 @@ header::after{
     text-overflow: ellipsis;
   }
 
-  /* Kasa tablosu — yatay scroll */
-  .kasa-table { font-size:11px; }
-  .kasa-table th, .kasa-table td { padding:6px 8px; }
-  .kasa-table .kasa-col-odeme,
-  .kasa-table .kasa-col-edit { display:none; }
+  /* Kasa tablosu — kart düzeni */
+  .kasa-table { display:block!important; border-collapse:unset!important; }
+  .kasa-table thead { display:none!important; }
+  .kasa-table tbody { display:block!important; }
+  .kasa-table tr {
+    display:flex!important; flex-wrap:wrap!important; align-items:center!important;
+    padding:10px 12px!important; margin-bottom:6px!important;
+    border:1px solid var(--border)!important; border-radius:10px!important;
+    background:var(--surface)!important;
+    row-gap:5px!important; column-gap:0!important;
+  }
+  .kasa-table tr:hover { background:var(--accent-bg)!important; }
+  .kasa-table td {
+    padding:0!important; border:none!important;
+    display:inline-flex!important; align-items:center!important;
+  }
+  /* ── Satır 1: Açıklama + Tutar (tam genişlik → otomatik wrap) ── */
+  .kasa-table td:nth-child(2) {
+    order:1!important; flex:0 0 calc(100% - 100px)!important;
+    min-width:0!important; overflow:hidden!important; font-size:13px!important;
+  }
+  .kasa-table td:nth-child(2) > div:first-child {
+    max-width:100%!important; overflow:hidden!important;
+    text-overflow:ellipsis!important; white-space:nowrap!important;
+  }
+  .kasa-table td:nth-child(5) {
+    order:2!important; flex:0 0 100px!important;
+    justify-content:flex-end!important; font-size:13px!important; font-weight:700!important;
+  }
+  /* ── Satır 2: Tarih · Kategori · Tür · Ödeme | Edit ── */
+  .kasa-table td:nth-child(1) {
+    order:3!important; flex:0 0 auto!important;
+    font-size:10px!important; color:var(--muted)!important; margin-right:8px!important;
+  }
+  .kasa-table td:nth-child(3) { order:4!important; flex:0 0 auto!important; margin-right:4px!important; }
+  .kasa-table td:nth-child(4) { order:5!important; flex:0 0 auto!important; }
+  .kasa-table .kasa-col-odeme {
+    display:inline-flex!important; order:6!important; flex:0 0 auto!important;
+    font-size:10px!important; color:var(--muted)!important; margin-left:6px!important;
+  }
+  .kasa-table .kasa-col-edit {
+    display:inline-flex!important; order:7!important; flex:1 0 auto!important;
+    justify-content:flex-end!important; gap:6px!important;
+  }
 
   /* Cari kartlar */
   .cari-card { padding:12px; }
@@ -2039,9 +2078,13 @@ body.sidebar-expanded .tab-panel.active {
   .tab-badge { font-size: 10px !important; }
 }
 
-/* 2b — Kasa tablo mobil font */
+/* 2b — Kasa tablo mobil (kart modu — override) */
 @media(max-width:768px) {
-  .kasa-table { font-size: 12px !important; }
+  .kasa-table { font-size:12px!important; }
+  /* Boş state düzelt */
+  .kasa-table tr td[colspan] {
+    flex:0 0 100%!important; order:0!important; justify-content:center!important;
+  }
 }
 
 /* 3a — 390px breakpoint */

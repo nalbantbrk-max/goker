@@ -5460,14 +5460,27 @@ async function syncPortalData() {
 
     // Her iş kaydını eşleştir
     var upsertRows = [];
-    jobs.forEach(function(j) {
+    // Belge signed URL'leri üret (1 yıllık)
+    async function getBelgeUrl(belgeler, kategori) {
+      if (!belgeler || !belgeler.length) return null;
+      var b = belgeler.find(function(x){ return x.kategori === kategori; });
+      if (!b || !b.path) return null;
+      try {
+        var res = await window_supabase.storage.from('belgeler').createSignedUrl(b.path, 31536000);
+        return (res && res.data && res.data.signedUrl) ? res.data.signedUrl : null;
+      } catch(e) { return null; }
+    }
+
+    for (var ji = 0; ji < jobs.length; ji++) {
+      var j = jobs[ji];
       var match = companies.find(function(c) {
         return c.name && j.customerName &&
           c.name.toUpperCase().trim() === j.customerName.toUpperCase().trim();
       });
-      if (!match) return;
-      // Taslak işler portale gönderilmez
-      if (j.lifecycleStatus === 'draft') return;
+      if (!match) continue;
+      if (j.lifecycleStatus === 'draft') continue;
+      var tutanakUrl = await getBelgeUrl(j.belgeler, 'tutanak');
+      var faturaUrl  = await getBelgeUrl(j.belgeler, 'fatura');
       upsertRows.push({
         owner_company_id: window._gkCompanyId,
         customer_company_id: match.id,
@@ -5491,9 +5504,11 @@ async function syncPortalData() {
         ref_no: j.refNo || null,
         odeme_durumu: j.paid ? 'odendi' : 'bekliyor',
         notlar: j.notes || null,
+        teslim_belgesi_url: tutanakUrl,
+        fatura_url: faturaUrl,
         updated_at: new Date().toISOString()
       });
-    });
+    }
 
     // Upsert — aktif işleri güncelle/ekle
     if (upsertRows.length) {

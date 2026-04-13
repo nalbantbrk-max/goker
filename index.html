@@ -2285,8 +2285,8 @@ body.sidebar-expanded .tab-panel.active {
           </div>
           <div class="dash-map-section">
             <div class="dash-map-section-title">ROTA HESAPLA</div>
-            <input id="mapFrom" class="dash-map-input" type="text" placeholder="📍 Nereden..." autocomplete="new-password" spellcheck="false">
-            <input id="mapTo" class="dash-map-input" type="text" placeholder="🏁 Nereye..." autocomplete="new-password" spellcheck="false">
+            <input id="mapFrom" class="dash-map-input" type="text" placeholder="📍 Nereden..." autocomplete="gk-route-origin" spellcheck="false">
+            <input id="mapTo" class="dash-map-input" type="text" placeholder="🏁 Nereye..." autocomplete="gk-route-dest" spellcheck="false">
             <button class="dash-map-calc-btn" onclick="calcMapRoute()">📏 Hesapla</button>
             <div id="mapRouteResult" class="dash-map-result" style="display:none"></div>
           </div>
@@ -4106,6 +4106,9 @@ window.gkGiris = async function(){
     if(typeof updateUserAvatar==='function') updateUserAvatar();
     sessionStorage.setItem('gk_auth', '1');
     document.body.classList.add('gk-authed');
+    // Login input'larını credential bağlantısından kopar — Chrome autofill önlenir
+    var eI = document.getElementById('loginEmailInput'); if(eI){ eI.autocomplete='off'; eI.value=''; }
+    var pI = document.getElementById('loginPwInput');  if(pI){ pI.autocomplete='off';  pI.value=''; }
     var ov = document.getElementById('loginOverlay');
     if(ov){ ov.style.opacity='0'; ov.style.transition='opacity .28s'; setTimeout(function(){ ov.remove(); },300); }
     if(typeof window._safeInit==='function') window._safeInit();
@@ -4511,16 +4514,9 @@ function initDashMap() {
     _setupPlacesAC("mapFrom");
     _setupPlacesAC("mapTo");
 
-    // Browser autofill temizleyici — email/credential gelirse sil
+    // Enter ile hesapla
     ['mapFrom','mapTo'].forEach(function(id){
-      var el = document.getElementById(id);
-      el.addEventListener('keydown', function(e){ if(e.key==='Enter') calcMapRoute(); });
-      el.addEventListener('focus', function(){
-        setTimeout(function(){
-          var v = el.value;
-          if (v && (v.includes('@') || v.includes('http') || v.length > 60)) el.value = '';
-        }, 100);
-      });
+      document.getElementById(id).addEventListener('keydown', function(e){ if(e.key==='Enter') calcMapRoute(); });
     });
   }
   renderMapJobs();

@@ -1493,6 +1493,12 @@ input:not([type="email"]):not([type="number"]):not([type="date"]):not([type="tel
 .dash-map-stat-lbl{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted)}
 .dash-map-gmaps{display:block;margin-top:8px;background:#1a73e8;color:#fff;border:none;border-radius:8px;padding:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;text-decoration:none;text-align:center;box-sizing:border-box}
 @media(max-width:640px){.dash-map-body{flex-direction:column}.dash-map-right{width:100%;border-left:none;border-top:1px solid var(--border)}#dashMap{height:260px}}
+.pac-container{z-index:99999!important;border-radius:8px;border:1px solid var(--border);box-shadow:0 8px 24px rgba(0,0,0,.15);font-family:'DM Sans',sans-serif;margin-top:2px}
+[data-theme="dark"] .pac-container{background:#1e293b;border-color:#334155}
+[data-theme="dark"] .pac-item{border-color:#334155;color:#e2e8f0}
+[data-theme="dark"] .pac-item:hover{background:#334155}
+[data-theme="dark"] .pac-item-query{color:#f1f5f9}
+[data-theme="dark"] .pac-matched{color:#f59e0b}
 /* ── FİNANSAL KART (popup) ── */
 .fin-card{background:var(--bg);border:1px solid var(--border);border-radius:12px;display:grid;grid-template-columns:1fr 1px 1fr 1px 1fr;margin-bottom:10px;overflow:hidden}
 .fin-col{padding:13px 14px}
@@ -1964,6 +1970,7 @@ body.sidebar-expanded .tab-panel.active {
 </style>
 <!-- Google Maps API anahtarı Ayarlar > API Anahtarları'ndan yüklenir -->
 <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/apexcharts@3.49.1/dist/apexcharts.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
   const supabaseUrl = 'https://kdadkibbhejfmusuysif.supabase.co';
@@ -1981,8 +1988,8 @@ body.sidebar-expanded .tab-panel.active {
     </div>
     <h2>Yönetim Paneli</h2>
     <p class="login-sub">Devam etmek için giriş bilgilerinizi girin</p>
-    <input type="email" id="loginEmailInput" placeholder="E-Posta (Yönetici Hesabı)" onkeydown="if(event.key==='Enter')document.getElementById('loginPwInput').focus()">
-    <input type="password" id="loginPwInput" placeholder="Şifre" onkeydown="if(event.key==='Enter')gkGiris()">
+    <input type="email" id="loginEmailInput" autocomplete="username" placeholder="E-Posta (Yönetici Hesabı)" onkeydown="if(event.key==='Enter')document.getElementById('loginPwInput').focus()">
+    <input type="password" id="loginPwInput" autocomplete="current-password" placeholder="Şifre" onkeydown="if(event.key==='Enter')gkGiris()">
     <div id="loginErrMsg">Hatalı şifre — lütfen tekrar deneyin</div>
     <button id="loginBtn" onclick="gkGiris()">Giriş Yap</button>
   </div>
@@ -2278,8 +2285,8 @@ body.sidebar-expanded .tab-panel.active {
           </div>
           <div class="dash-map-section">
             <div class="dash-map-section-title">ROTA HESAPLA</div>
-            <input id="mapFrom" name="route_origin" class="dash-map-input" type="text" placeholder="📍 Nereden..." autocomplete="off" readonly onfocus="this.removeAttribute('readonly')">
-            <input id="mapTo" name="route_dest" class="dash-map-input" type="text" placeholder="🏁 Nereye..." autocomplete="off" readonly onfocus="this.removeAttribute('readonly')">
+            <input id="mapFrom" name="route_origin" class="dash-map-input" type="text" placeholder="📍 Nereden..." autocomplete="new-password">
+            <input id="mapTo" name="route_dest" class="dash-map-input" type="text" placeholder="🏁 Nereye..." autocomplete="new-password">
             <button class="dash-map-calc-btn" onclick="calcMapRoute()">📏 Hesapla</button>
             <div id="mapRouteResult" class="dash-map-result" style="display:none"></div>
           </div>
@@ -3338,7 +3345,7 @@ body.sidebar-expanded .tab-panel.active {
         <p style="font-size:12px;color:var(--muted);margin-bottom:14px">Harita, rota ve adres otomatik tamamlama özellikleri için gereklidir. <a href="https://console.cloud.google.com/apis/credentials" target="_blank" style="color:var(--accent)">Google Cloud Console</a>'dan alabilirsiniz.</p>
         <div class="field">
           <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:6px">API Anahtarı</label>
-          <input type="password" id="mapsApiKeyInput" placeholder="AIzaSy..." style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;background:var(--input-bg);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:12px;box-sizing:border-box">
+          <input type="text" id="mapsApiKeyInput" placeholder="AIzaSy..." autocomplete="off" autocorrect="off" spellcheck="false" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;background:var(--input-bg);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:12px;box-sizing:border-box">
         </div>
         <div style="display:flex;gap:8px;margin-top:10px;align-items:center">
           <button onclick="saveApiAnahtarlari()" style="background:var(--accent);border:none;color:#111;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif">Kaydet &amp; Yükle</button>
@@ -4391,7 +4398,7 @@ function loadMapsApi() {
   if (document.getElementById('_mapsApiScript')) return;
   var s = document.createElement('script');
   s.id = '_mapsApiScript';
-  s.src = 'https://maps.googleapis.com/maps/api/js?key=' + encodeURIComponent(key) + '&libraries=places&callback=initGoogleMapsApi';
+  s.src = 'https://maps.googleapis.com/maps/api/js?key=' + encodeURIComponent(key) + '&libraries=places&v=weekly&callback=initGoogleMapsApi';
   s.async = true;
   s.onerror = function() {
     showToast('⚠️ Harita API yüklenemedi — anahtarı kontrol edin');
@@ -4447,12 +4454,62 @@ function initDashMap() {
       polylineOptions: {strokeColor:'#F59E0B', strokeWeight:4, strokeOpacity:0.85}
     });
 
-    // Places Autocomplete — TR kısıtlı
-    var acOpts = {componentRestrictions:{country:'tr'}, fields:['formatted_address','name','geometry']};
-    var acFrom = new google.maps.places.Autocomplete(document.getElementById('mapFrom'), acOpts);
-    var acTo   = new google.maps.places.Autocomplete(document.getElementById('mapTo'),   acOpts);
-    acFrom.addListener('place_changed', function(){ var p=acFrom.getPlace(); if(p&&p.name) document.getElementById('mapFrom').value=p.formatted_address||p.name; });
-    acTo.addListener('place_changed',   function(){ var p=acTo.getPlace();   if(p&&p.name) document.getElementById('mapTo').value=p.formatted_address||p.name; });
+    // Places Autocomplete — Custom dropdown (yeni API uyumlu)
+    var _acService = new google.maps.places.AutocompleteService();
+    var _placesService = new google.maps.places.PlacesService(_dashMap);
+
+    function _setupPlacesAC(inputId) {
+      var input = document.getElementById(inputId);
+      if (!input) return;
+      // Create dropdown container
+      var dd = document.createElement("div");
+      dd.className = "gk-places-dd";
+      dd.style.cssText = "display:none;position:absolute;top:100%;left:0;right:0;z-index:99999;background:var(--surface);border:1px solid var(--border);border-radius:0 0 8px 8px;box-shadow:0 8px 24px rgba(0,0,0,.2);max-height:200px;overflow-y:auto;font-size:13px;font-family:DM Sans,sans-serif";
+      input.parentElement.style.position = "relative";
+      input.parentElement.appendChild(dd);
+
+      var _debounce = null;
+      input.addEventListener("input", function() {
+        clearTimeout(_debounce);
+        var q = input.value.trim();
+        if (q.length < 2) { dd.style.display = "none"; return; }
+        _debounce = setTimeout(function() {
+          _acService.getPlacePredictions({
+            input: q,
+            componentRestrictions: { country: "tr" },
+            types: ["geocode", "establishment"]
+          }, function(predictions, status) {
+            dd.innerHTML = "";
+            if (status !== google.maps.places.PlacesServiceStatus.OK || !predictions) {
+              dd.style.display = "none"; return;
+            }
+            predictions.slice(0, 5).forEach(function(p) {
+              var item = document.createElement("div");
+              item.style.cssText = "padding:10px 12px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;transition:background .1s";
+              item.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>' + '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + p.description + '</span>';
+              item.addEventListener("mouseenter", function() { this.style.background = "var(--accent-dim)"; });
+              item.addEventListener("mouseleave", function() { this.style.background = "transparent"; });
+              item.addEventListener("mousedown", function(e) {
+                e.preventDefault();
+                input.value = p.description;
+                dd.style.display = "none";
+              });
+              dd.appendChild(item);
+            });
+            // Google attribution
+            var attr = document.createElement("div");
+            attr.style.cssText = "padding:4px 12px;text-align:right;font-size:9px;color:var(--muted);opacity:.6";
+            attr.textContent = "powered by Google";
+            dd.appendChild(attr);
+            dd.style.display = "block";
+          });
+        }, 300);
+      });
+      input.addEventListener("blur", function() { setTimeout(function(){ dd.style.display = "none"; }, 200); });
+      input.addEventListener("focus", function() { if (dd.children.length > 0) dd.style.display = "block"; });
+    }
+    _setupPlacesAC("mapFrom");
+    _setupPlacesAC("mapTo");
 
     // Enter ile hesapla
     ['mapFrom','mapTo'].forEach(function(id){
@@ -12794,6 +12851,7 @@ function _renderDashboardInner(wrap) {
     +'<div class="dash-hero-val" style="color:var(--accent);font-size:24px">'+fmt(hCiroData)+'</div>'
     +'<div class="dash-hero-val" style="color:'+(hKarData>=0?'var(--green)':'var(--red)')+';font-size:18px;margin-top:4px">'+fmt(hKarData)+' <span style="font-size:11px;font-weight:400;color:var(--muted)">kar</span></div>'
     +'<div class="dash-hero-delta" style="color:'+hFarkColor+';margin-top:4px">'+hFarkSign+hFark.toFixed(1)+'% \u00f6nceki haftaya</div>'
+    +'<div id="heroSparkWeekly" style="height:40px;margin:6px 0 2px"></div>'
     +'<hr class="dash-hero-divider">'
     +'<div style="display:flex;justify-content:space-between;align-items:center">'
       +'<span style="font-size:11px;color:var(--muted)">Marj</span>'
@@ -12873,60 +12931,52 @@ function _renderDashboardInner(wrap) {
     +'</div>'
   +'</div>';
 
-  // ── 4 MİNİ STAT KARTI ────────────────────────────────
+  // -- 4 MINI STAT KARTI --
   var _chMus=[];jobs.forEach(function(j){if(j.customer&&_chMus.indexOf(j.customer)<0)_chMus.push(j.customer);});
   var _chSay=_chMus.filter(function(m){var mI=jobs.filter(function(j){return j.customer===m;});if(mI.length<2)return false;var sTs=Math.max.apply(null,mI.map(function(j){return new Date(j.date||0).getTime();}));return(Date.now()-sTs)/86400000>60;}).length;
+  // -- SVG Icon sabitleri --
+  var _svgCal='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>';
+  var _svgBar='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>';
+  var _svgUsers='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="'+(_chSay>0?'#ef4444':'var(--green)')+'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>';
+  var _svgDoc=belgeUyari.length>0?'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>':'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>';
+  var _kasaGid=kasaKayitlar.filter(function(k){return k.tur==='gider'||k.type==='gider'||k.tip==='gider';});
+  var _tekrarliToplam=_kasaGid.filter(function(k){return k.tekrar||k.tekrarli||k.recurring||k.sabit;}).reduce(function(s,k){return s+(parseFloat(k.tutar||k.amount)||0);},0);
+  var _buAyGid=_kasaGid.filter(function(k){return(k.tarih||k.date||'').slice(0,7)===thisMonth;});
+  var _buAySabitT=_buAyGid.filter(function(k){return k.tekrar||k.tekrarli||k.recurring||k.sabit;}).reduce(function(s,k){return s+(parseFloat(k.tutar||k.amount)||0);},0);
+  var _buAyDegT=_buAyGid.filter(function(k){return!(k.tekrar||k.tekrarli||k.recurring||k.sabit);}).reduce(function(s,k){return s+(parseFloat(k.tutar||k.amount)||0);},0);
+  var _buAyToplam=_buAySabitT+_buAyDegT;
+  var _sabitPct=_buAyToplam>0?Math.round(_buAySabitT/_buAyToplam*100):0;
   var miniRow='<div class="dash-mini-row">'
-    +(function(){
-      var kasaArr2 = kasaKayitlar;
-      var tekrarliG = kasaArr2.filter(function(k){
-        return (k.tur==='gider'||k.type==='gider'||k.tip==='gider') && (k.tekrar||k.tekrarli||k.recurring||k.sabit);
-      });
-      var tekrarliToplam = tekrarliG.reduce(function(s,k){return s+(parseFloat(k.tutar||k.amount)||0);},0);
-      var tekrarliSayi = tekrarliG.length;
-      return '<div class="dash-mini" onclick="switchTab(\'kasa\')" style="cursor:pointer">'
-        +'<div class="dash-mini-icon">\uD83D\uDDD3\uFE0F</div>'
-        +'<div class="dash-mini-body">'
-          +'<div class="dash-mini-val" style="color:'+(tekrarliSayi>0?'#f59e0b':'var(--muted)')+'">'+fmt(tekrarliToplam)+'</div>'
-          +'<div class="dash-mini-lbl">Sabit Giderler/Ay</div>'
-        +'</div>'
-      +'</div>';
-    })()
-    +(function(){
-      var kasaArr3 = kasaKayitlar;
-      var buAyGid = kasaArr3.filter(function(k){
-        var d=(k.tarih||k.date||'');
-        return (k.tur==='gider'||k.type==='gider'||k.tip==='gider') && d.slice(0,7)===thisMonth;
-      });
-      var katMap={};
-      buAyGid.forEach(function(k){
-        var kat=k.category||k.kategori||k.grup||'Di\u011fer';
-        katMap[kat]=(katMap[kat]||0)+(parseFloat(k.tutar||k.amount)||0);
-      });
-      var topKat=Object.keys(katMap).sort(function(a,b){return katMap[b]-katMap[a];})[0]||null;
-      var buAyToplamGid=buAyGid.reduce(function(s,k){return s+(parseFloat(k.tutar||k.amount)||0);},0);
-      return '<div class="dash-mini" onclick="switchTab(\'kasa\')" style="cursor:pointer">'
-        +'<div class="dash-mini-icon">\uD83D\uDCCA</div>'
-        +'<div class="dash-mini-body">'
-          +'<div class="dash-mini-val" style="color:#ef4444">'+fmt(buAyToplamGid)+'</div>'
-          +'<div class="dash-mini-lbl">'+(topKat?'En Fazla: '+topKat:'Bu Ay Gider')+'</div>'
-        +'</div>'
-      +'</div>';
-    })()
-    +'<div class="dash-mini" onclick="switchTab(\'musteri\')">'
-      +'<div class="dash-mini-icon">\uD83D\uDC65</div>'
+    +'<div class="dash-mini" onclick="switchTab(\'kasa\')" style="cursor:pointer">'
+      +'<div class="dash-mini-icon">'+_svgCal+'</div>'
+      +'<div class="dash-mini-body">'
+        +'<div class="dash-mini-val" style="color:#f59e0b">'+fmt(_tekrarliToplam)+'</div>'
+        +'<div class="dash-mini-lbl">Sabit Giderler/Ay</div>'
+      +'</div>'
+    +'</div>'
+    +'<div class="dash-mini" onclick="switchTab(\'kasa\')" style="cursor:pointer">'
+      +'<div class="dash-mini-icon">'+_svgBar+'</div>'
+      +'<div class="dash-mini-body">'
+        +'<div class="dash-mini-val" style="color:#ef4444">'+fmt(_buAyToplam)+'</div>'
+        +'<div style="height:5px;border-radius:3px;background:var(--border);overflow:hidden;margin:4px 0 2px"><div style="height:100%;border-radius:3px;width:'+_sabitPct+'%;background:linear-gradient(90deg,#8b5cf6,#a78bfa)"></div></div>'
+        +'<div style="display:flex;justify-content:space-between;font-size:9px;color:var(--muted)"><span>Sabit %'+_sabitPct+'</span><span>De\u011fi\u015fken %'+(100-_sabitPct)+'</span></div>'
+      +'</div>'
+    +'</div>'
+    +'<div class="dash-mini" onclick="switchTab(\'musteri\')" style="cursor:pointer">'
+      +'<div class="dash-mini-icon">'+_svgUsers+'</div>'
       +'<div class="dash-mini-body"><div class="dash-mini-val" style="color:'+(_chSay>0?'#ef4444':'var(--green)')+'">'+_chSay+' m\u00fc\u015fteri</div><div class="dash-mini-lbl">Churn Riski</div></div>'
     +'</div>'
-    +'<div class="dash-mini" onclick="switchTab(\'sofor\')">'
-      +'<div class="dash-mini-icon">'+(belgeUyari.length>0?'\u26a0\ufe0f':'\u2705')+'</div>'
+    +'<div class="dash-mini" onclick="switchTab(\'cari\')" style="cursor:pointer">'
+      +'<div class="dash-mini-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7H5a2 2 0 010-4h14v4"/><path d="M3 5v14a2 2 0 002 2h16v-5"/><path d="M18 12a2 2 0 000 4h4v-4z"/></svg></div>'
       +'<div class="dash-mini-body">'
-        +'<div class="dash-mini-val" style="color:'+(belgeUyari.length>0?'#f59e0b':'var(--green)')+'">'+(belgeUyari.length>0?belgeUyari.length+' ki\u015fi':'G\u00fcncel \u2713')+'</div>'
-        +'<div class="dash-mini-lbl">'+(belgeUyari.length>0?'Belge Uyard\u0131':'Belgeler Ge\u00e7erli')+'</div>'
+        +'<div class="dash-mini-val" style="color:'+(function(){var _p=jobs.filter(function(j){return j.paid;}).length;var _t=jobs.length;var _r=_t>0?Math.round(_p/_t*100):0;return _r>=80?'var(--green)':_r>=50?'#f59e0b':'#ef4444';})()+'">'+(function(){var _p=jobs.filter(function(j){return j.paid;}).length;var _t=jobs.length;return _t>0?Math.round(_p/_t*100):0;})()+'%</div>'
+        +'<div style="height:5px;border-radius:3px;background:var(--border);overflow:hidden;margin:4px 0 2px"><div style="height:100%;border-radius:3px;width:'+(function(){var _p=jobs.filter(function(j){return j.paid;}).length;var _t=jobs.length;return _t>0?Math.round(_p/_t*100):0;})()+'%;background:linear-gradient(90deg,var(--green),#2DD4BF)"></div></div>'
+        +'<div class="dash-mini-lbl">Tahsilat Oran\u0131</div>'
       +'</div>'
     +'</div>'
   +'</div>';
 
-  // ── CHART 1 — Haftalık Grouped Bar (son 8 hafta) ──────
+  // -- CHART DATA: Haftalik Ciro/Kar (son 8 hafta) --
   var wData=[];
   for(var ci=7;ci>=0;ci--){
     var cs=new Date(now);cs.setDate(now.getDate()-now.getDay()-ci*7+1);
@@ -12938,55 +12988,20 @@ function _renderDashboardInner(wrap) {
       kar:cJ.reduce(function(s,j){return s+(j.profit||0);},0)
     });
   }
-  var cMax=Math.max.apply(null,wData.map(function(d){return Math.max(d.ciro,Math.abs(d.kar));}).concat([1]));
-  var cW=560,cH=120,cPL=0,cPB=20,cPT=8;
-  var cChartW=cW-cPL,cChartH=cH-cPB-cPT;
-  var slotW2=Math.floor(cChartW/wData.length);
-  var bW1=Math.floor(slotW2*0.38),bW2=Math.floor(slotW2*0.38),bGap=2;
-  var chartBars='',chartLabels='';
-  wData.forEach(function(d,i){
-    var bx=cPL+i*slotW2+Math.floor((slotW2-bW1*2-bGap)/2);
-    var cH2=Math.max(2,Math.round((d.ciro/cMax)*cChartH));
-    var kH2=Math.max(2,Math.round((Math.max(0,d.kar)/cMax)*cChartH));
-    chartBars+='<rect x="'+bx+'" y="'+(cPT+cChartH-cH2)+'" width="'+bW1+'" height="'+cH2+'" rx="2" fill="var(--accent)" opacity="'+(i===7?'0.85':'0.45')+'"/>';
-    chartBars+='<rect x="'+(bx+bW1+bGap)+'" y="'+(cPT+cChartH-kH2)+'" width="'+bW2+'" height="'+kH2+'" rx="2" fill="var(--green)" opacity="'+(i===7?'0.85':'0.55')+'"/>';
-    chartLabels+='<text x="'+(bx+bW1)+'" y="'+(cH-4)+'" text-anchor="middle" font-size="9" fill="var(--muted)">'+d.lbl+'</text>';
-  });
-  var chart1Html='<div class="dash-chart-card">'
-    +'<div class="dash-chart-head"><span class="dash-chart-title">Haftal\u0131k Ciro / Kar</span>'
-      +'<span style="display:flex;gap:12px;font-size:10px;color:var(--muted)">'
-        +'<span><svg width="10" height="10"><rect width="10" height="10" rx="2" fill="var(--accent)" opacity=".7"/></svg> Ciro</span>'
-        +'<span><svg width="10" height="10"><rect width="10" height="10" rx="2" fill="var(--green)" opacity=".8"/></svg> Kar</span>'
-      +'</span>'
-    +'</div>'
-    +'<div class="dash-chart-body" style="overflow-x:auto">'
-      +'<svg width="100%" viewBox="0 0 '+cW+' '+cH+'" preserveAspectRatio="none" style="display:block;height:'+cH+'px">'+chartBars+chartLabels+'</svg>'
-    +'</div>'
-  +'</div>';
+  var chart1Html=''; // removed - sparkline in hero instead
 
-  // ── CHART 2 — Top 5 Müşteri Yatay Bar ────────────────
+
+  // -- CHART DATA: Top 5 Musteri --
   var mCiroMap={};
   jobs.forEach(function(j){if(j.customerName){mCiroMap[j.customerName]=(mCiroMap[j.customerName]||0)+(j.sellTotal||0);}});
   var top5=Object.keys(mCiroMap).map(function(k){return{name:k,ciro:mCiroMap[k]};}).sort(function(a,b){return b.ciro-a.ciro;}).slice(0,5);
-  var t5Max=top5.length>0?top5[0].ciro:1;
-  var t5Bars='';
-  top5.forEach(function(m,i){
-    var barPct=Math.max(2,(m.ciro/t5Max)*100);
-    var colors=['var(--accent)','var(--green)','#8b5cf6','#f59e0b','#60a5fa'];
-    t5Bars+='<div style="margin-bottom:10px">'
-      +'<div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:3px">'
-        +'<span style="color:var(--text);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px">'+m.name+'</span>'
-        +'<span style="color:var(--muted);font-family:monospace">'+fmt(m.ciro)+'</span>'
-      +'</div>'
-      +'<div style="height:6px;border-radius:3px;background:var(--border)">'
-        +'<div style="height:100%;border-radius:3px;width:'+barPct+'%;background:'+colors[i]+'"></div>'
-      +'</div>'
-    +'</div>';
-  });
   var chart2Html='<div class="dash-chart-card">'
     +'<div class="dash-chart-head"><span class="dash-chart-title">Top 5 M\u00fc\u015fteri</span><span style="font-size:10px;color:var(--muted)">Ciro bazl\u0131</span></div>'
-    +'<div class="dash-chart-body">'+(top5.length>0?t5Bars:'<div style="text-align:center;padding:20px;color:var(--muted);font-size:12px">Hen\u00fcz veri yok</div>')+'</div>'
+    +'<div class="dash-chart-body"><div id="apexChartTop5" style="min-height:180px"></div></div>'
   +'</div>';
+
+  var chart3Html=''; // removed
+
 
 
   // ── Ortak Kâr Dağılımı ─────────────────────────────
@@ -13003,26 +13018,33 @@ function _renderDashboardInner(wrap) {
   }
   var partnerHtml = '';
   if (_hasPartner || _pp.ortakCount > 0) {
+    var _pTotal = _pp.burak + _pp.ahmet;
+    var _pBurakPct = _pTotal > 0 ? Math.round(_pp.burak / _pTotal * 100) : 50;
     partnerHtml = '<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:16px">'
       +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">'
-      +'<div style="font-size:11px;font-weight:700;letter-spacing:1px;color:var(--muted)">ORTAK KÂR DAĞILIMI — '+_pLabel+'</div>'
-      +'<div style="display:flex;gap:4px">'+_ppBtn('hafta','Haftalık')+_ppBtn('ay','Aylık')+_ppBtn('ytd','YTD')+'</div>'
+        +'<div style="display:flex;align-items:center;gap:8px">'
+          +'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>'
+          +'<span style="font-size:11px;font-weight:700;letter-spacing:1px;color:var(--muted)">ORTAK K\u00c2R DA\u011eILIMI \u2014 '+_pLabel+'</span>'
+        +'</div>'
+        +'<div style="display:flex;gap:4px">'+_ppBtn('hafta','Haftal\u0131k')+_ppBtn('ay','Ayl\u0131k')+_ppBtn('ytd','YTD')+'</div>'
       +'</div>'
       +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'
-      +'<div style="background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.2);border-radius:8px;padding:10px">'
-      +'<div style="font-size:11px;color:var(--blue);font-weight:700">👤 Burak</div>'
-      +'<div style="font-size:20px;font-weight:800;color:var(--text);margin:4px 0">'+fmt(_pp.burak)+'</div>'
-      +'<div style="font-size:11px;color:var(--muted)">'
-      +(_pp.ortakCount?'Ortak: '+fmt(Math.round(_pp.ortakKar/2))+' ('+_pp.ortakCount+' iş)':'')
-      +(_pp.burakCount?(_pp.ortakCount?'<br>':'')+'Kendi: '+fmt(_pp.burakKar)+' ('+_pp.burakCount+' iş)':'')
-      +'</div></div>'
-      +'<div style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:8px;padding:10px">'
-      +'<div style="font-size:11px;color:var(--accent);font-weight:700">👤 Ahmet IŞIL</div>'
-      +'<div style="font-size:20px;font-weight:800;color:var(--text);margin:4px 0">'+fmt(_pp.ahmet)+'</div>'
-      +'<div style="font-size:11px;color:var(--muted)">'
-      +(_pp.ortakCount?'Ortak: '+fmt(Math.round(_pp.ortakKar/2))+' ('+_pp.ortakCount+' iş)':'')
-      +(_pp.ahmetCount?(_pp.ortakCount?'<br>':'')+'Kendi: '+fmt(_pp.ahmetKar)+' ('+_pp.ahmetCount+' iş)':'')
-      +'</div></div>'
+      +'<div style="background:rgba(59,130,246,.06);border:1px solid rgba(59,130,246,.15);border-radius:8px;padding:10px">'
+        +'<div style="font-size:11px;color:var(--blue);font-weight:700;display:flex;align-items:center;gap:4px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Burak</div>'
+        +'<div style="font-size:18px;font-weight:800;color:var(--text);margin:4px 0">'+fmt(_pp.burak)+'</div>'
+        +'<div style="height:4px;border-radius:2px;background:var(--border);overflow:hidden;margin:4px 0"><div style="height:100%;border-radius:2px;width:'+_pBurakPct+'%;background:linear-gradient(90deg,var(--blue),#60a5fa)"></div></div>'
+        +'<div style="font-size:10px;color:var(--muted)">'
+        +(_pp.ortakCount?'Ortak: '+fmt(Math.round(_pp.ortakKar/2))+' ('+_pp.ortakCount+' i\u015f)':'')
+        +(_pp.burakCount?(_pp.ortakCount?'<br>':'')+'Kendi: '+fmt(_pp.burakKar)+' ('+_pp.burakCount+' i\u015f)':'')
+        +'</div></div>'
+      +'<div style="background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.15);border-radius:8px;padding:10px">'
+        +'<div style="font-size:11px;color:var(--accent);font-weight:700;display:flex;align-items:center;gap:4px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Ahmet I\u015eIL</div>'
+        +'<div style="font-size:18px;font-weight:800;color:var(--text);margin:4px 0">'+fmt(_pp.ahmet)+'</div>'
+        +'<div style="height:4px;border-radius:2px;background:var(--border);overflow:hidden;margin:4px 0"><div style="height:100%;border-radius:2px;width:'+(100-_pBurakPct)+'%;background:linear-gradient(90deg,var(--accent),#fbbf24)"></div></div>'
+        +'<div style="font-size:10px;color:var(--muted)">'
+        +(_pp.ortakCount?'Ortak: '+fmt(Math.round(_pp.ortakKar/2))+' ('+_pp.ortakCount+' i\u015f)':'')
+        +(_pp.ahmetCount?(_pp.ortakCount?'<br>':'')+'Kendi: '+fmt(_pp.ahmetKar)+' ('+_pp.ahmetCount+' i\u015f)':'')
+        +'</div></div>'
       +'</div></div>';
   }
 
@@ -13169,6 +13191,50 @@ function _renderDashboardInner(wrap) {
   animateKpiCounters();
   updateHeader();
   if (document.getElementById('tahsilatWidget')) renderTahsilatWidget();
+
+  // -- ApexCharts POST-RENDER --
+  setTimeout(function(){
+    var isDark = document.documentElement.getAttribute('data-theme')==='dark';
+    var txtColor = isDark ? '#94A3B8' : '#64748B';
+    var gridColor = isDark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.06)';
+    var accentColor = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#F59E0B';
+    var greenColor = isDark ? '#2DD4BF' : '#059669';
+
+    // Sparkline: Weekly Ciro in Hero A
+    var elSpark = document.getElementById('heroSparkWeekly');
+    if(elSpark && typeof ApexCharts !== 'undefined' && wData && wData.length > 0){
+      elSpark.innerHTML='';
+      new ApexCharts(elSpark, {
+        chart:{type:'area',height:40,sparkline:{enabled:true},animations:{enabled:true,easing:'easeinout',speed:800}},
+        series:[{name:'Ciro',data:wData.map(function(d){return d.ciro;})}],
+        colors:[accentColor],
+        fill:{type:'gradient',gradient:{shadeIntensity:1,opacityFrom:0.4,opacityTo:0.05,stops:[0,100]}},
+        stroke:{curve:'smooth',width:2},
+        tooltip:{enabled:true,theme:isDark?'dark':'light',x:{show:false},y:{formatter:function(v){return '\u20ba'+v.toLocaleString('tr-TR',{maximumFractionDigits:0});}}}
+      }).render();
+    }
+
+    // Top 5 Musteri Horizontal Bar
+    var el2 = document.getElementById('apexChartTop5');
+    if(el2 && typeof ApexCharts !== 'undefined' && top5.length>0){
+      el2.innerHTML='';
+      new ApexCharts(el2, {
+        chart:{type:'bar',height:180,toolbar:{show:false},fontFamily:'DM Sans,sans-serif',background:'transparent',animations:{enabled:true,easing:'easeinout',speed:800}},
+        series:[{name:'Ciro',data:top5.map(function(m){return m.ciro;})}],
+        xaxis:{labels:{show:false},axisBorder:{show:false},axisTicks:{show:false}},
+        yaxis:{labels:{style:{colors:txtColor,fontSize:'10px',fontWeight:600},maxWidth:100}},
+        plotOptions:{bar:{horizontal:true,borderRadius:4,barHeight:'60%',distributed:true}},
+        colors:[accentColor,greenColor,'#8b5cf6','#f97316','#60a5fa'],
+        dataLabels:{enabled:true,formatter:function(v){return '\u20ba'+v.toLocaleString('tr-TR',{maximumFractionDigits:0});},style:{fontSize:'10px',fontFamily:'JetBrains Mono,monospace',fontWeight:600,colors:['#fff']}},
+        grid:{show:false},
+        tooltip:{theme:isDark?'dark':'light',y:{formatter:function(v){return '\u20ba'+v.toLocaleString('tr-TR',{maximumFractionDigits:0});}}},
+        legend:{show:false},
+        labels:top5.map(function(m){return m.name;})
+      }).render();
+    } else if(el2 && top5.length===0){
+      el2.innerHTML='<div style="text-align:center;padding:30px;color:var(--muted);font-size:12px">Hen\u00fcz veri yok</div>';
+    }
+  }, 50);
 }
 
 function animateKpiCounters() {
